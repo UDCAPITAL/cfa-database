@@ -344,6 +344,23 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .loslist div:first-child{border-top:0;padding-top:0}
 .loslist b{font-family:var(--f-mono);font-weight:500;margin-right:6px;color:var(--accent)}
 .recall{white-space:pre-line}
+.pdfb{display:block;background:#fff;border-radius:6px;overflow:hidden}
+.pdfb canvas{display:block;width:100%;height:auto}
+.stem.pdfq{max-width:none;white-space:normal}
+.opt.pdfo{grid-template-columns:minmax(0,1fr) auto;padding:6px}
+.opt.pdfo .k{display:none}
+.opt.pdfo .mk{padding-right:6px}
+.expl.pdfx{white-space:normal;display:flex;flex-direction:column;gap:10px;padding:12px}
+.pdfdoc{background:#fff;border-radius:12px;padding:clamp(6px,2vw,22px) clamp(0px,1.5vw,16px);box-shadow:0 1px 0 var(--line),0 0 0 1px var(--line)}
+.pdfdoc .pdfb{border-radius:0}
+.note.pdfnote{padding:0;background:none;border:0}
+.loslinks{display:flex;flex-direction:column;gap:2px}
+.loslinks a{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:.85rem;line-height:1.35}
+.loslinks a:hover{background:var(--surface-2)}
+.loslinks b{font:500 .78rem var(--f-mono);color:var(--accent)}
+.pdftbl td,.pdftbl th{font-size:.85rem}
+#pdfstat:empty{display:none}
+@media (min-width:1100px){.note-layout:has(.pdfnote) .note-side{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto}}
 </style>
 <div class="app">
   <aside class="rail">
@@ -385,7 +402,7 @@ const AP_BASE='https://app.analystprep.com/cfa1/2027/question-bank/chapter/';
 const subj=id=>CURR[id-1];
 
 /* ---------- question bank & notes index ---------- */
-let QB=[],QID={},QBY={},NOTE={},RAWNOTE={},PERSO=null;
+let QB=[],QID={},QBY={},NOTE={},RAWNOTE={},PERSO=null,PDX=null;
 const noteOf=(s,r)=>(NOTE[s]||{})[r]||null;
 const losLetter=t=>{const m=/^\s*(?:LOS\s*)?\d*\s*\(?([a-z])\)?\s*:/i.exec(t||'');return m?m[1].toLowerCase():null};
 function rappelFor(q){
@@ -397,8 +414,11 @@ function indexAll(){
   QB=[];QID={};QBY={};NOTE={};RAWNOTE={};
   CURR.forEach(c=>{QBY[c.id]={};c.r.forEach((_,i)=>QBY[c.id][i+1]=[])});
   const add=o=>{if(!QBY[o.s]||!QBY[o.s][o.r]||QID[o.id])return;QB.push(o);QID[o.id]=o;QBY[o.s][o.r].push(o)};
-  RAW.forEach(f=>{const s=f.subject,cnt={};f.questions.forEach(q=>{cnt[q.r]=(cnt[q.r]||0)+1;add(Object.assign({},q,{s,src:'own',id:s+'.'+q.r+'.'+cnt[q.r]}))})});
-  NOTES_RAW.forEach(f=>{NOTE[f.subject]=NOTE[f.subject]||{};f.notes.forEach(n=>NOTE[f.subject][n.r]=n)});
+  if(PDX)Object.entries(PDX.subj).forEach(([s,v])=>{s=+s;if(v.qa)(PDX.qa[v.qa]||[]).forEach(q=>{const L=losLetter(q.los);add({s,r:q.r,src:'ap',id:'ap'+s+'.'+q.n,q:q.q,o:q.o,a:q.a,e:q.e,los:q.los,d:0,t:'Q.'+q.n+(L?' · LOS '+q.r+L:''),pf:v.qa,pq:q})})});
+  if(!mineOnly()){
+    RAW.forEach(f=>{const s=f.subject,cnt={};f.questions.forEach(q=>{cnt[q.r]=(cnt[q.r]||0)+1;add(Object.assign({},q,{s,src:'own',id:s+'.'+q.r+'.'+cnt[q.r]}))})});
+    NOTES_RAW.forEach(f=>{NOTE[f.subject]=NOTE[f.subject]||{};f.notes.forEach(n=>NOTE[f.subject][n.r]=n)});
+  }
   if(PERSO){
     Object.entries(PERSO.ap||{}).forEach(([s,list])=>{s=+s;list.forEach(q=>{const L=losLetter(q.los);add({s,r:q.lm,src:'ap',id:'ap'+s+'.'+q.n,q:q.q,o:q.o,a:q.a,e:q.e,los:q.los,d:0,t:'Q.'+q.n+(L?' · LOS '+q.lm+L:'')})})});
     (PERSO.fiches||[]).forEach(f=>{NOTE[f.subject]=NOTE[f.subject]||{};f.notes.forEach(n=>NOTE[f.subject][n.r]=n)});
@@ -410,7 +430,147 @@ indexAll();
 function idb(){return new Promise((res,rej)=>{try{const r=indexedDB.open('cfaqcm',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
 async function idbGet(k){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>rej(t.error)})}
 async function idbSet(k,v){const db=await idb();return new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');v==null?tx.objectStore('kv').delete(k):tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
-async function loadPerso(){try{PERSO=(await idbGet('perso'))||null}catch(e){PERSO=null}indexAll()}
+async function loadPerso(){try{PERSO=(await idbGet('perso'))||null}catch(e){PERSO=null}try{PDX=(await idbGet('pdfidx'))||null}catch(e){PDX=null}indexAll()}
+
+/* ---------- the user's own AnalystPrep PDFs: parsed and rendered in this browser with pdf.js, never uploaded ---------- */
+const PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const PX0=50,PX1=562; // horizontal crop of the PDF page (points), drops the side margins
+let PDFLIB=null,PDFIO=null;const DOCS={},BANDS=new Map();
+function hasPdx(){return!!(PDX&&Object.keys(PDX.subj||{}).length)}
+function mineOnly(){if(!hasPdx())return false;try{return S.meta.settings.onlyMine!==false}catch(e){return true}}
+function pdfjs(){
+  return PDFLIB||(PDFLIB=new Promise((res,rej)=>{const s=document.createElement('script');s.src=PDFJS_URL+'pdf.min.js';
+    s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_URL+'pdf.worker.min.js';res(window.pdfjsLib)};
+    s.onerror=()=>{PDFLIB=null;rej(new Error('pdfjs'))};document.head.appendChild(s)}));
+}
+const nrm=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
+function titleSubj(n,title){const t=nrm(title).slice(0,12);if(t.length<8)return 0;const c=CURR.find(c=>c.r[n-1]&&nrm(c.r[n-1]).slice(0,12)===t);return c?c.id:0}
+/* text lines of a page, top-down coordinates in points */
+async function pageLines(page,p){
+  const H=page.view[3]-page.view[1];const tc=await page.getTextContent();const it=[];
+  for(const o of tc.items){if(!o.str||!o.str.trim())continue;const sz=Math.hypot(o.transform[2],o.transform[3])||10;const top=H-o.transform[5]-.9*sz;
+    if(top>H-64)continue;it.push({top,bot:top+1.15*sz,x:o.transform[4],w:o.width||0,sz,s:o.str})}
+  it.sort((a,b)=>a.top-b.top||a.x-b.x);const L=[];
+  for(const o of it){const l=L[L.length-1];if(l&&Math.abs(o.top-l.top)<3){l.items.push(o);l.bot=Math.max(l.bot,o.bot)}else L.push({top:o.top,bot:o.bot,items:[o]})}
+  return L.map(l=>{l.items.sort((a,b)=>a.x-b.x);let t='',end=-1e9;
+    for(const o of l.items){if(t&&!/\s$/.test(t)&&!/^\s/.test(o.s)&&o.x-end>o.sz*.15)t+=' ';t+=o.s;end=o.x+o.w}
+    return{p,top:l.top,bot:l.bot,x:l.items[0].x,t:t.replace(/\s+/g,' ').trim()}});
+}
+async function scanPdf(file,onP){
+  const lib=await pdfjs();const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+  const L=[];let W=612,H=792;
+  for(let p=1;p<=doc.numPages;p++){const pg=await doc.getPage(p);if(p===1){W=pg.view[2]-pg.view[0];H=pg.view[3]-pg.view[1]}
+    L.push(...await pageLines(pg,p));pg.cleanup();if(p%8===0)onP(p/doc.numPages)}
+  const meta={name:file.name,np:doc.numPages,w:W,h:H,size:file.size,ts:Date.now()};doc.destroy();
+  const qi=[];L.forEach((l,i)=>{if(/^Q\.\d+\b/.test(l.t)&&l.x<75)qi.push(i)});
+  if(qi.length<=10)return parseNotes(L,meta);
+  meta.ext={};L.forEach(l=>{const e=meta.ext[l.p]||(meta.ext[l.p]=[l.top,l.bot]);e[0]=Math.min(e[0],l.top);e[1]=Math.max(e[1],l.bot)}); // Q&A pages hold text only: trim page breaks to the text
+  return parseQA(L,qi,meta);
+}
+/* Q&A file: "Q.n stem / A. B. C. / The correct answer is X. / explanation / Level I, Topic, Learning Module n ..., LOS ..." */
+function parseQA(L,qi,meta){
+  const votes={},lmAt=[];let lm=0;
+  L.forEach((l,i)=>{const m=/Learning Module (\d+)\s*:\s*(.*)/.exec(l.t);if(m){lm=+m[1];const s=titleSubj(lm,m[2]);if(s)votes[s]=(votes[s]||0)+1}lmAt[i]=lm});
+  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||0);
+  const tx=a=>a.map(l=>l.t).join(' ');const qs=[];
+  qi.forEach((i,k)=>{
+    const seg=L.slice(i,k+1<qi.length?qi[k+1]:L.length);
+    const ai=seg.findIndex(l=>/^The correct answer is\s*[ABC]\b/.test(l.t));if(ai<0)return;
+    const op=[];for(let x=1;x<ai;x++){const l=seg[x];if(op.length<3&&l.x>80&&l.x<130&&new RegExp('^'+'ABC'[op.length]+'\\.(\\s|$)').test(l.t))op.push(x)}
+    if(op.length!==3)return;
+    let fi=-1;for(let x=ai+1;x<seg.length;x++)if(/^Level (I|1)\b/.test(seg[x].t)){fi=x;break}
+    let ei;if(fi>=0){ei=fi;while(ei+1<seg.length&&seg[ei+1].p===seg[ei].p&&seg[ei+1].top-seg[ei].bot<9)ei++}
+    else{ei=seg.length-1;while(ei>ai&&/^(Learning Module \d|Level (I|1)\b)/.test(seg[ei].t))ei--}
+    const foot=fi>=0?tx(seg.slice(fi,ei+1)):'';const fm=/Learning Module (\d+)/.exec(foot);const r=fm?+fm[1]:lmAt[i];
+    if(!s||!subj(s).r[r-1])return;
+    const lo=/LOS\s*(\d*\s*\(?[a-z]\)?)\s*[:.]?\s*(.*)$/i.exec(foot);
+    const at=(a,b,pa,pb)=>({p0:a.p,y0:a.top-pa,p1:b.p,y1:b.top-pb});
+    qs.push({n:+/^Q\.(\d+)/.exec(seg[0].t)[1],r,los:lo?lo[1].replace(/\s/g,'')+': '+lo[2]:'',
+      q:tx(seg.slice(0,op[0])).replace(/^Q\.\d+\s*/,''),o:op.map((x,j)=>tx(seg.slice(x,j<2?op[j+1]:ai)).replace(/^[ABC]\.\s*/,'')),
+      a:'ABC'.indexOf(/^The correct answer is\s*([ABC])/.exec(seg[ai].t)[1]),e:tx(seg.slice(ai+1,ei+1)),
+      st:at(seg[0],seg[op[0]],5,4),op:op.map((x,j)=>Object.assign(at(seg[x],seg[j<2?op[j+1]:ai],4,4),{x0:Math.max(PX0,seg[x].x-6)})),
+      ex:{p0:seg[ai].p,y0:seg[ai].top-4,p1:seg[ei].p,y1:seg[ei].bot+5}});
+  });
+  return{kind:'qa',s,meta,qs};
+}
+/* notes file: "Learning Module n: title" starts each reading, "LOS na: ..." headings inside */
+function parseNotes(L,meta){
+  const st=[];L.forEach((l,i)=>{const m=/^Learning Module (\d+)\s*:\s*(.*)/.exec(l.t);if(m&&+m[1]===st.length+1)st.push({r:+m[1],title:m[2],i})});
+  const votes={};st.forEach(m=>{const s=titleSubj(m.r,m.title);if(s)votes[s]=(votes[s]||0)+1});
+  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||0);const mods={};
+  st.forEach((m,k)=>{
+    const a=L[m.i],nx=st[k+1]?L[st[k+1].i]:null;let p1=nx?nx.p:meta.np,y1=nx?nx.top-8:meta.h-64;
+    if(y1<36+24){p1--;y1=meta.h-64}
+    const los=[];for(let i=m.i+1;i<(nx?st[k+1].i:L.length);i++){const x=/^LOS\s*\d+\s*\(?([a-z])\)?\s*[:.]\s*(.*)/.exec(L[i].t);if(x)los.push({c:x[1],t:x[2],p:L[i].p,y:L[i].top})}
+    mods[m.r]={p0:a.p,y0:a.top-8,p1,y1,title:m.title,los};
+  });
+  return{kind:'notes',s,meta,mods};
+}
+async function importPdfs(files){
+  files=[...files].filter(f=>/\.pdf$/i.test(f.name));if(!files.length)return;
+  const say=m=>{const el=$('#pdfstat');if(el)el.textContent=m};
+  PDX=PDX||{files:{},subj:{},notes:{},qa:{}};const done=[],bad=[];
+  for(const[i,f]of files.entries()){
+    try{
+      const res=await scanPdf(f,x=>say(`Reading ${f.name} (${i+1}/${files.length}) · ${Math.round(x*100)}%`));
+      const n=res.kind==='qa'?res.qs.length:Object.keys(res.mods||{}).length;
+      if(!res.s||!n){bad.push(f.name);continue}
+      const key='s'+res.s+'-'+res.kind;await idbSet('pdf:'+key,await f.arrayBuffer());
+      PDX.files[key]=Object.assign(res.meta,{kind:res.kind,s:res.s,n});(PDX.subj[res.s]=PDX.subj[res.s]||{})[res.kind]=key;
+      if(res.kind==='qa')PDX.qa[key]=res.qs;else PDX.notes[key]=res.mods;
+      delete DOCS[key];BANDS.clear();await idbSet('pdfidx',PDX);
+      done.push(subj(res.s).code+' '+(res.kind==='qa'?n+' questions':n+' readings'));
+    }catch(e){bad.push(f.name)}
+  }
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  indexAll();render();
+  say((done.length?'Added: '+done.join(' · ')+'.':'')+(bad.length?' Not recognised: '+bad.join(', ')+'.':''));
+  toast(done.length?`${done.length} PDF${done.length>1?'s':''} added`:'No AnalystPrep PDF recognised');
+}
+async function dropPdfSubject(s){
+  const v=PDX&&PDX.subj[s];if(!v)return;
+  for(const key of Object.values(v)){await idbSet('pdf:'+key,null).catch(()=>{});delete PDX.files[key];delete PDX.qa[key];delete PDX.notes[key];delete DOCS[key]}
+  delete PDX.subj[s];BANDS.clear();await idbSet('pdfidx',hasPdx()?PDX:null).catch(()=>{});if(!hasPdx())PDX=null;indexAll();render();
+}
+/* rendering: a region {p0,y0,p1,y1} becomes one canvas per page slice, drawn lazily */
+function pdfBand(f,R,x0){
+  const m=PDX&&PDX.files[f];if(!m||!R)return'';x0=x0||PX0;let h='';
+  for(let p=R.p0;p<=R.p1;p++){const e=m.ext&&m.ext[p],a=p===R.p0?R.y0:e?e[0]-4:36,b=p===R.p1?R.y1:e?e[1]+5:m.h-64;if(b-a<3||(e&&p===R.p1&&R.y1<e[0]))continue;
+    h+=`<canvas data-pf="${f}" data-pp="${p}" data-py0="${a.toFixed(1)}" data-py1="${b.toFixed(1)}" data-px0="${x0.toFixed(1)}" style="aspect-ratio:${(PX1-x0).toFixed(1)}/${(b-a).toFixed(1)}"></canvas>`}
+  return`<span class="pdfb">${h}</span>`;
+}
+function getDoc(f){
+  return DOCS[f]||(DOCS[f]=(async()=>{const lib=await pdfjs();const buf=await idbGet('pdf:'+f);if(!buf)throw new Error('missing');return lib.getDocument({data:new Uint8Array(buf)}).promise})().catch(e=>{delete DOCS[f];throw e}));
+}
+function segScale(c){const w=c.clientWidth||(c.parentNode&&c.parentNode.clientWidth)||600;return Math.ceil(w*Math.min(2,window.devicePixelRatio||1)/(PX1-(+c.dataset.px0))*4)/4}
+const segKey=(c,sc)=>[c.dataset.pf,c.dataset.pp,c.dataset.py0,c.dataset.py1,c.dataset.px0,sc].join('|');
+function blit(c,src){c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);c.dataset.done='1'}
+async function drawSeg(c){
+  const sc=segScale(c),k=segKey(c,sc),hit=BANDS.get(k);if(hit)return blit(c,hit);
+  const tok=c._tok=(c._tok||0)+1;
+  try{
+    const page=await(await getDoc(c.dataset.pf)).getPage(+c.dataset.pp);if(c._tok!==tok)return;
+    const x0=+c.dataset.px0,y0=+c.dataset.py0,y1=+c.dataset.py1;
+    const off=document.createElement('canvas');off.width=Math.round((PX1-x0)*sc);off.height=Math.max(1,Math.round((y1-y0)*sc));
+    const ctx=off.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,off.width,off.height);
+    await page.render({canvasContext:ctx,viewport:page.getViewport({scale:sc,offsetX:-x0*sc,offsetY:-y0*sc})}).promise;
+    if(c._tok!==tok)return;
+    if(off.width*off.height<1.2e6){BANDS.set(k,off);if(BANDS.size>40)BANDS.delete(BANDS.keys().next().value)}
+    blit(c,off);
+  }catch(e){c.dataset.err='1'}
+}
+function hydratePdf(){
+  const cs=document.querySelectorAll('canvas[data-pf]:not([data-obs])');if(!cs.length)return;
+  PDFIO=PDFIO||new IntersectionObserver(es=>es.forEach(e=>{const c=e.target;
+    if(e.isIntersecting){if(!c.dataset.done)drawSeg(c)}
+    else if(c.dataset.done&&c.width*c.height>1.2e6){c._tok=(c._tok||0)+1;c.width=c.height=0;delete c.dataset.done}}),{rootMargin:'1200px 0px'});
+  cs.forEach(c=>{c.dataset.obs='1';const hit=BANDS.get(segKey(c,segScale(c)));if(hit)blit(c,hit);PDFIO.observe(c)});
+}
+const isPdfQ=q=>!!(q&&q.pf&&PDX&&PDX.files[q.pf]);
+const pdfNote=(s,r)=>{const f=PDX&&PDX.subj[s]&&PDX.subj[s].notes;const m=f&&PDX.notes[f]&&PDX.notes[f][r];return m?{f,m}:null};
+const stemHtml=q=>isPdfQ(q)?`<div class="stem pdfq">${pdfBand(q.pf,q.pq.st)}</div>`:`<div class="stem">${esc(q.q)}</div>`;
+const optBody=(q,k)=>isPdfQ(q)?pdfBand(q.pf,q.pq.op[k],q.pq.op[k].x0):`<span>${esc(q.o[k])}</span>`;
+const explBody=q=>isPdfQ(q)?pdfBand(q.pf,q.pq.ex):esc(q.e);
 
 /* ---------- state & persistence ---------- */
 /* MODE 'artifact' = claude.ai page (db + Claude tutor); 'web' = public site with username/password accounts (Supabase) */
@@ -631,7 +791,7 @@ const SEL=new Set(UI.sel);
 function saveUI(){UI.sel=[...SEL];lsSet(LS_UI,UI)}
 function passes(q,f){
   f=f||UI;if(q.d&&!f.diff.includes(q.d))return false;
-  if(f.src&&f.src!=='all'&&q.src!==f.src)return false;
+  if(f.src&&f.src!=='all'&&q.src!==f.src&&!mineOnly())return false;
   const p=S.prog[q.id];
   switch(f.status){case'new':return!(p&&p.n);case'wrong':return!!(p&&p.n&&!p.l);case'flag':return!!(p&&p.f);case'todo':return!(p&&p.n&&p.l);default:return true}
 }
@@ -697,7 +857,7 @@ function viewFor(r){
 }
 function vResume(){const done=Q.items.filter(i=>i.done||i.ch!=null).length;return`<div class="countdown" style="margin-bottom:18px"><span>Quiz in progress: <b>${esc(Q.label)}</b> · ${done}/${Q.items.length}</span><a class="btn primary sm" href="#quiz">Resume</a><button class="btn ghost sm" data-act="abandon">Discard</button></div>`}
 const simBlock=()=>`<div class="sim">${[10,30,60].map(n=>`<button data-act="sim" data-n="${n}"><b>${n}</b><span>${fmtDur(n*(+S.meta.settings.examSecs||90))} timed</span></button>`).join('')}</div>`;
-const importBanner=()=>PERSO||MODE==='web'?'':`<div class="banner"><p><b>Add your AnalystPrep material.</b> Import your personal data file (questions + study notes converted from your PDFs). It stays in this browser and unlocks ~2,600 extra questions and the full notes.</p><a class="btn primary" href="#settings">Import my file</a></div>`;
+const importBanner=()=>PERSO||hasPdx()?'':`<div class="banner"><p><b>Add your AnalystPrep material.</b> Pick your AnalystPrep PDFs (study notes and Q&amp;A of each topic): the notes and questions appear here exactly as in the PDFs, with charts and tables. They stay in this browser and are never uploaded.</p><a class="btn primary" href="#settings">Add my PDFs</a></div>`;
 
 function vDash(){
   const g=gStats(),st=streak(),set=S.meta.settings;
@@ -767,7 +927,7 @@ function vBuilder(){
     h+='</details>'});
   h+=`</div></section><aside class="side"><section class="panel stack" style="gap:16px">
    <div><p class="eyebrow">Available questions</p><div class="avail">${avail}</div><div class="small muted">${plural(SEL.size,'reading')} selected</div></div>
-   <div class="field"><span class="lbl">Source</span><div class="seg">${[['all','All'],['ap','AnalystPrep'],['own','QCM Lab']].map(([k,l])=>`<button data-act="setSrc" data-v="${k}" class="${UI.src===k?'on':''}">${l}</button>`).join('')}</div>${PERSO?'':'<span class="small muted">Import your AnalystPrep file in Settings to add its questions.</span>'}</div>
+   ${mineOnly()?'':`<div class="field"><span class="lbl">Source</span><div class="seg">${[['all','All'],['ap','AnalystPrep'],['own','QCM Lab']].map(([k,l])=>`<button data-act="setSrc" data-v="${k}" class="${UI.src===k?'on':''}">${l}</button>`).join('')}</div>${PERSO||hasPdx()?'':'<span class="small muted">Add your AnalystPrep PDFs in Settings to get their questions.</span>'}</div>`}
    <div class="field"><span class="lbl">Questions</span><div class="seg">${[['all','All'],['new','Unseen'],['todo','Not mastered'],['wrong','Missed'],['flag','Flagged']].map(([k,l])=>`<button data-act="setStatus" data-v="${k}" class="${UI.status===k?'on':''}">${l}</button>`).join('')}</div></div>
    <div class="field"><span class="lbl">Difficulty (QCM Lab questions)</span><div class="seg">${[[1,'Easy'],[2,'Medium'],[3,'Hard']].map(([k,l])=>`<button data-act="setDiff" data-v="${k}" class="${UI.diff.includes(k)?'on':''}">${l}</button>`).join('')}</div></div>
    <div class="field"><label for="count">Number of questions: <span class="mono" id="countv">${UI.count}</span></label><input type="range" id="count" min="5" max="${Math.max(5,Math.min(180,avail))}" step="1" value="${Math.min(UI.count,Math.max(5,Math.min(180,avail)))}"></div>
@@ -789,10 +949,10 @@ function vQuiz(){
   let h=`<div class="player"><div class="ptop"><div class="lbl"><b>${esc(Q.label)}</b> · ${exam?'Timed':'Practice'} · question <span class="mono">${Q.i+1}/${n}</span></div><div class="row"><span class="timer" id="timer">0:00</span><button class="btn sm flag ${p.f?'on':''}" data-act="flag" title="Flag (F)">⚑ ${p.f?'Flagged':'Flag'}</button><button class="btn sm" data-act="finish">${exam?'Submit':'Finish'}</button></div></div>
   <div class="prog"><i style="width:${answered/n*100}%"></i></div>
   <article class="qcard"><div class="qmeta"><span><b>${c.code} · R${q.r}</b> ${esc(c.r[q.r-1])}</span><span>${srcChip(q)} ${esc(q.t||'')}${q.d?` · <span class="dots" aria-label="difficulty ${q.d}">${'●'.repeat(q.d)}${'○'.repeat(3-q.d)}</span>`:''}${p.n?` · seen ${p.n}× (${p.c} correct)`:''}</span></div>
-  <div class="stem">${esc(q.q)}</div><div class="opts">`;
-  q.o.forEach((o,k)=>{let cls='',mk='';if(done){if(k===q.a){cls='good';mk='Correct answer'}else if(k===it.ch){cls='bad';mk='Your answer'}}else if(it.ch===k)cls='sel';h+=`<button class="opt ${cls}" data-act="choose" data-k="${k}" ${done?'disabled':''}><span class="k">${LET[k]}</span><span>${esc(o)}</span><span class="mk">${mk}</span></button>`});
+  ${stemHtml(q)}<div class="opts">`;
+  q.o.forEach((o,k)=>{let cls='',mk='';if(done){if(k===q.a){cls='good';mk='Correct answer'}else if(k===it.ch){cls='bad';mk='Your answer'}}else if(it.ch===k)cls='sel';h+=`<button class="opt ${cls} ${isPdfQ(q)?'pdfo':''}" data-act="choose" data-k="${k}" ${done?'disabled':''}><span class="k">${LET[k]}</span>${optBody(q,k)}<span class="mk">${mk}</span></button>`});
   h+='</div>';
-  if(done){const ok=it.ch===q.a,rp=rappelFor(q);h+=`<div class="expl"><b class="verdict ${ok?'ok':'ko'}">${ok?'Correct':'Incorrect — the answer is '+LET[q.a]}</b>${esc(q.e)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${q.id}" data-ch="${it.ch}">✦ Ask Claude</button><a class="btn sm ghost" href="#note-${q.s}-${q.r}">Open the study notes</a></div>`}
+  if(done){const ok=it.ch===q.a,rp=rappelFor(q);h+=`<div class="expl ${isPdfQ(q)?'pdfx':''}"><b class="verdict ${ok?'ok':'ko'}">${ok?'Correct':'Incorrect — the answer is '+LET[q.a]}</b>${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${q.id}" data-ch="${it.ch}">✦ Ask Claude</button><a class="btn sm ghost" href="#note-${q.s}-${q.r}">Open the study notes</a></div>`}
   h+=`<div class="pact"><span class="small muted"><span class="kbd">A</span> <span class="kbd">B</span> <span class="kbd">C</span> choose · <span class="kbd">Enter</span> ${exam?'next':'check / next'} · <span class="kbd">F</span> flag${exam?' · <span class="kbd">←</span> <span class="kbd">→</span> navigate':''}</span><div class="row">`;
   if(exam)h+=`<button class="btn" data-act="prev" ${Q.i?'':'disabled'}>Previous</button>${Q.i<n-1?`<button class="btn primary" data-act="next">Next</button>`:`<button class="btn primary" data-act="finish">Submit</button>`}`;
   else if(!done)h+=`<button class="btn primary" data-act="validate" ${it.ch==null?'disabled':''}>Check answer</button>`;
@@ -814,7 +974,7 @@ function vSession(id){
   <section class="panel"><div class="panel-head"><h2>By reading</h2></div><div class="tbl-wrap"><table><thead><tr><th>Topic</th><th>Reading</th><th class="n">Score</th><th style="width:30%">Accuracy</th></tr></thead><tbody>${Object.entries(byR).sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true})).map(([k,v])=>{const[si,ri]=k.split('-').map(Number);const c=subj(si);return`<tr class="click" data-act="goto" data-h="subject-${si}"><td class="mono">${c.code}</td><td>R${ri} · ${esc(c.r[ri-1])}</td><td class="n">${v.ok}/${v.n}</td><td><div class="bar"><i style="width:${v.ok/v.n*100}%"></i><span class="mps" style="left:${MPS*100}%"></span></div></td></tr>`}).join('')}</tbody></table></div></section>
   <section class="panel"><div class="panel-head"><h2>Answers</h2><div class="seg" style="width:auto"><button class="on" data-act="rvFilter" data-v="all">All (${s.n})</button><button data-act="rvFilter" data-v="ko">Mistakes (${wrongIds.length})</button></div></div><div id="rvlist">`;
   s.items.forEach(([qid,ch,t])=>{const q=QID[qid];if(!q)return;const ok=ch===q.a,c=subj(q.s),rp=rappelFor(q);
-    h+=`<details class="rv" data-ok="${ok?1:0}"><summary><span class="mark ${ch==null?'na':ok?'ok':'ko'}">${ch==null?'–':ok?'✓':'✗'}</span><span style="min-width:0"><span class="mono small muted">${c.code} R${q.r} · </span>${esc(q.q.length>110?q.q.slice(0,110)+'…':q.q)}</span><span class="small muted mono">${t?fmtDur(t):''}</span></summary><div class="body"><div class="stem">${esc(q.q)}</div><div class="stack" style="gap:6px">${q.o.map((o,k)=>`<div class="ro ${k===q.a?'good':k===ch?'bad':''}"><b class="mono">${LET[k]}</b><span>${esc(o)}${k===q.a?' <b>· correct answer</b>':k===ch?' <b>· your answer</b>':''}</span></div>`).join('')}</div><div class="expl">${esc(q.e)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${qid}" data-ch="${ch==null?'':ch}">✦ Ask Claude</button><button class="btn sm flag ${(S.prog[qid]||{}).f?'on':''}" data-act="flagId" data-id="${qid}">⚑ ${(S.prog[qid]||{}).f?'Flagged':'Flag'}</button></div></div></details>`});
+    h+=`<details class="rv" data-ok="${ok?1:0}"><summary><span class="mark ${ch==null?'na':ok?'ok':'ko'}">${ch==null?'–':ok?'✓':'✗'}</span><span style="min-width:0"><span class="mono small muted">${c.code} R${q.r} · </span>${esc(q.q.length>110?q.q.slice(0,110)+'…':q.q)}</span><span class="small muted mono">${t?fmtDur(t):''}</span></summary><div class="body">${stemHtml(q)}<div class="stack" style="gap:6px">${q.o.map((o,k)=>`<div class="ro ${k===q.a?'good':k===ch?'bad':''}"><b class="mono">${LET[k]}</b><span style="flex:1;min-width:0">${isPdfQ(q)?optBody(q,k):esc(o)}${k===q.a?' <b>· correct answer</b>':k===ch?' <b>· your answer</b>':''}</span></div>`).join('')}</div><div class="expl ${isPdfQ(q)?'pdfx':''}">${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${qid}" data-ch="${ch==null?'':ch}">✦ Ask Claude</button><button class="btn sm flag ${(S.prog[qid]||{}).f?'on':''}" data-act="flagId" data-id="${qid}">⚑ ${(S.prog[qid]||{}).f?'Flagged':'Flag'}</button></div></div></details>`});
   return h+'</div></section></div>';
 }
 
@@ -833,7 +993,7 @@ function vNotes(){
   const tot=CURR.reduce((a,c)=>a+c.r.length,0),done=CURR.reduce((a,c)=>a+readCount(c.id),0);
   let h=`<header class="page-head"><div><p class="eyebrow">${done}/${tot} readings read</p><h1>Study notes</h1></div><div class="row"><button class="btn" data-act="askOpen">Ask Claude</button></div></header><div class="stack">${importBanner()}`;
   CURR.forEach(c=>{const n=readCount(c.id);h+=`<details class="panel" ${UI.notesOpen.includes(c.id)?'open':''} data-nopen="${c.id}"><summary style="cursor:pointer;list-style:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,200px) auto;gap:14px;align-items:center"><h3>${esc(c.name)} <span class="mono small muted">${c.code}</span></h3><div class="bar"><i style="width:${n/c.r.length*100}%"></i></div><span class="mono small">${n}/${c.r.length}</span></summary><div class="list" style="margin-top:10px">`;
-    c.r.forEach((t,i)=>{const r=i+1,x=rStats(c.id,r),has=!!noteOf(c.id,r)||!!(RAWNOTE[c.id]||{})[r];h+=`<a class="li" href="#note-${c.id}-${r}" style="text-decoration:none;color:inherit"><div class="t"><b><span class="mono muted small">R${r}</span> ${esc(t)}</b><span>${has?'':'no notes imported yet · '}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc):''}</span></div>${readChip(c.id,r)}</a>`});
+    c.r.forEach((t,i)=>{const r=i+1,x=rStats(c.id,r),has=!!pdfNote(c.id,r)||!!noteOf(c.id,r)||!!(RAWNOTE[c.id]||{})[r];h+=`<a class="li" href="#note-${c.id}-${r}" style="text-decoration:none;color:inherit"><div class="t"><b><span class="mono muted small">R${r}</span> ${esc(t)}</b><span>${has?'':'no notes imported yet · '}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc):''}</span></div>${readChip(c.id,r)}</a>`});
     h+='</div></details>'});
   return h+'</div>';
 }
@@ -844,11 +1004,17 @@ function vNote(s,r){
   const c=subj(s);if(!c||!c.r[r-1])return vNotes();const n=noteOf(s,r),raw=(RAWNOTE[s]||{})[r],st=readSt(s,r),x=rStats(s,r);
   const prev=r>1?[s,r-1]:s>1?[s-1,subj(s-1).r.length]:null,next=r<c.r.length?[s,r+1]:s<CURR.length?[s+1,1]:null;
   let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
-  <div class="note-layout"><article class="panel note">`;
-  if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Import your personal AnalystPrep file in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
-  if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
-  if(raw)h+=`<h2>${n?'Full AnalystPrep notes':'AnalystPrep notes'}</h2><p class="small muted">Text extracted from your PDF. Charts are missing and some formulas are garbled — the formula box on the right has clean versions.</p><div class="raw">${rawHtml(raw)}</div>`;
+  `;
+  const pn=pdfNote(s,r);
+  if(pn)h+=`<div class="note-layout"><article class="note pdfnote"><div class="pdfdoc" id="pdfdoc">${pdfBand(pn.f,pn.m)}</div>`;
+  else{
+    h+=`<div class="note-layout"><article class="panel note">`;
+    if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Add your AnalystPrep PDFs in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
+    if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
+    if(raw)h+=`<h2>${n?'Full AnalystPrep notes':'AnalystPrep notes'}</h2><p class="small muted">Text extracted from your PDF. Charts are missing and some formulas are garbled — the formula box on the right has clean versions.</p><div class="raw">${rawHtml(raw)}</div>`;
+  }
   h+=`</article><aside class="side note-side"><section class="panel stack" style="gap:10px"><p class="eyebrow">My progress</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([k,l])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${k}" class="${st===k?'on':''}">${l}</button>`).join('')}</div><span class="small muted">${(S.meta.read[s+'-'+r]||{}).ts?'Updated '+fmtD(S.meta.read[s+'-'+r].ts)+' · ':''}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>`;
+  if(pn&&pn.m.los.length)h+=`<section class="panel stack" style="gap:8px"><h3>In this reading</h3><div class="loslinks">${pn.m.los.map(l=>`<a href="#" data-act="pdfJump" data-p="${l.p}" data-y="${l.y}"><b>${r}${esc(l.c)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>`;
   if(n&&n.formulas&&n.formulas.length)h+=`<section class="panel stack" style="gap:10px"><h3>Key formulas</h3>${n.formulas.map(f=>`<div class="formula"><span class="small muted">${esc(f.name)}</span><code>${esc(f.f)}</code>${f.note?`<span class="small">${esc(f.note)}</span>`:''}</div>`).join('')}</section>`;
   if(n&&n.los&&n.los.length)h+=`<section class="panel stack" style="gap:10px"><h3>LOS reminders</h3><div class="loslist small">${n.los.map(l=>`<div><b>${r}${esc(l.code)}</b>${esc(l.title)}<br><span class="muted">${esc(l.rappel)}</span></div>`).join('')}</div></section>`;
   if(n&&n.pitfalls&&n.pitfalls.length)h+=`<section class="panel stack" style="gap:8px"><h3>Exam traps</h3><ul class="pit">${n.pitfalls.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`;
@@ -878,7 +1044,14 @@ function vHistory(){
 function vSettings(){
   const s=S.meta.settings;const apN=PERSO?Object.values(PERSO.ap||{}).reduce((a,l)=>a+l.length,0):0;
   return`<header class="page-head"><div><p class="eyebrow">Account, data, dates, timing, backup</p><h1>Settings</h1></div></header><div class="grid2">${accountPanel()}
-  <section class="panel stack" style="gap:12px"><h2>My AnalystPrep data</h2>
+  <section class="panel stack" style="gap:12px"><h2>My AnalystPrep PDFs</h2>
+   <p class="small muted" style="margin:0">Select your AnalystPrep PDFs, all at once if you like: for each topic, the study notes file and the Q&amp;A file. Topics are recognised automatically. The PDFs are read and stored only in this browser (repeat on each device); only your progress is synced.</p>
+   <input type="file" id="pdfFiles" accept=".pdf,application/pdf" multiple>
+   <p class="small" id="pdfstat" style="margin:0"></p>
+   ${hasPdx()?`<div class="tbl-wrap"><table class="pdftbl"><thead><tr><th>Topic</th><th>Notes</th><th>Questions</th><th></th></tr></thead><tbody>${CURR.filter(c=>PDX.subj[c.id]).map(c=>{const v=PDX.subj[c.id],fn=v.notes&&PDX.files[v.notes],fq=v.qa&&PDX.files[v.qa];return`<tr><td>${c.code}</td><td>${fn?fn.n+'/'+c.r.length+' readings':'<span class="muted">—</span>'}</td><td>${fq?fq.n:'<span class="muted">—</span>'}</td><td style="text-align:right"><button class="btn sm ghost" data-act="pdfDrop" data-s="${c.id}">Remove</button></td></tr>`}).join('')}</tbody></table></div>
+   <label class="row small" style="gap:8px"><input type="checkbox" id="onlyMine" ${s.onlyMine!==false?'checked':''}> Show only my AnalystPrep content (hide the QCM Lab questions and notes)</label>`:''}
+  </section>
+  <section class="panel stack" style="gap:12px"><h2>Data file (older format)</h2>
    ${PERSO?`<p class="small" style="margin:0">Imported ${fmtD(PERSO.importedAt||Date.now())}: <b>${apN}</b> questions, <b>${(PERSO.fiches||[]).reduce((a,f)=>a+f.notes.length,0)}</b> study sheets, <b>${Object.values(PERSO.raw||{}).reduce((a,m)=>a+m.length,0)}</b> full-text modules. Stored only in this browser.</p>`:'<p class="small muted" style="margin:0">Pick the file <span class="mono">cfa-my-data.json</span> (in your cfa-qcm\\private folder). It stays in this browser and is never uploaded; only your progress is synced.</p>'}
    <input type="file" id="persoFile" accept=".json,application/json">
    ${PERSO?'<div class="row"><button class="btn danger sm" data-act="dropPerso">Remove from this browser</button></div>':''}</section>
@@ -971,7 +1144,7 @@ async function importPerso(file){
 /* ---------- post-render & events ---------- */
 let tick=null;
 function afterRender(r){
-  clearInterval(tick);
+  clearInterval(tick);hydratePdf();
   if(r==='quiz'&&Q){Q.qStart=Date.now();const upd=()=>{const el=$('#timer');if(!el||!Q)return;if(Q.mode==='exam'){const left=Q.limit-(Date.now()-Q.start)/1000;el.textContent=fmtDur(left);el.classList.toggle('low',left<60);if(left<=0){toast('Time is up: answers submitted.');finishQuiz()}}else el.textContent=fmtDur((Date.now()-Q.qStart)/1000+(Q.items[Q.i].t||0))};upd();tick=setInterval(upd,1000)}
 }
 function stamp(){if(!Q)return;const it=Q.items[Q.i];if(it&&!(Q.mode!=='exam'&&it.done))it.t=(it.t||0)+(Date.now()-Q.qStart)/1000;Q.qStart=Date.now();lsSet(LS_ACTIVE,Q)}
@@ -1026,6 +1199,9 @@ const ACT={
   redoSame:el=>{const s=S.sessions.find(x=>x.id===el.dataset.id);startQuiz(shuffle(s.items.map(x=>QID[x[0]]).filter(Boolean)),{mode:s.mode,label:s.label,keys:s.keys})},
   reviewQuiz:el=>{const st=el.dataset.st;const qs=QB.filter(q=>{const p=S.prog[q.id];if(!p)return false;const w=p.n&&!p.l;return st==='flag'?p.f:st==='wrong'?w:(w||p.f)});startQuiz(shuffle(qs).slice(0,60),{mode:'practice',label:st==='flag'?'Review · flagged':st==='wrong'?'Review · missed':'Review'})},
   reviewGroup:el=>startQuiz(shuffle(el.dataset.ids.split(',').map(id=>QID[id]).filter(Boolean)),{mode:'practice',label:el.dataset.label}),
+  pdfDrop:el=>dropPdfSubject(+el.dataset.s).then(()=>toast('PDFs removed from this browser')),
+  pdfJump:el=>{const p=+el.dataset.p,y=+el.dataset.y;const c=[...document.querySelectorAll('#pdfdoc canvas')].find(c=>+c.dataset.pp===p&&y>=+c.dataset.py0-1&&y<=+c.dataset.py1);
+    if(c){const b=c.getBoundingClientRect();window.scrollTo({top:window.scrollY+b.top+(y-c.dataset.py0)/(c.dataset.py1-c.dataset.py0)*b.height-16,behavior:'smooth'})}},
   dropPerso:async()=>{await idbSet('perso',null).catch(()=>{});PERSO=null;indexAll();toast('AnalystPrep data removed from this browser');render()},
   export:()=>{const io=$('#io');io.value=JSON.stringify({app:'cfa-qcm-lab',kind:'progress',v:2,prog:S.prog,sessions:S.sessions,meta:S.meta});io.select();(navigator.clipboard?navigator.clipboard.writeText(io.value):Promise.reject()).then(()=>toast('Progress copied'),()=>toast('Text selected: press Ctrl+C'))},
   import:()=>{try{const d=JSON.parse($('#io').value);if(!d||d.app!=='cfa-qcm-lab'||d.kind==='perso')throw 0;S.prog=d.prog||{};S.sessions=d.sessions||[];S.meta=d.meta||S.meta;normalize();touch('prog','sessions','meta');toast('Progress imported');go('dashboard')}catch(e){toast('Invalid text: paste a full QCM Lab progress export.')}},
@@ -1037,6 +1213,8 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if
 document.addEventListener('change',e=>{const el=e.target;
   if(el.id==='balance'){UI.balance=el.checked;saveUI()}
   if(el.id==='persoFile'&&el.files&&el.files[0])importPerso(el.files[0]);
+  if(el.id==='pdfFiles'&&el.files&&el.files.length)importPdfs(el.files);
+  if(el.id==='onlyMine'){S.meta.settings.onlyMine=el.checked;touch('meta');indexAll();render()}
   if(el.dataset.set){const k=el.dataset.set;S.meta.settings[k]=el.type==='number'?Math.max(30,Math.min(300,+el.value||90)):el.value;touch('meta');toast('Saved')}
 });
 document.addEventListener('input',e=>{const el=e.target;if(el.id==='count'){UI.count=+el.value;$('#countv').textContent=el.value;saveUI()}});
