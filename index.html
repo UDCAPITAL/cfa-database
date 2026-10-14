@@ -698,7 +698,7 @@ function viewFor(r){
 }
 function vResume(){const done=Q.items.filter(i=>i.done||i.ch!=null).length;return`<div class="countdown" style="margin-bottom:18px"><span>Quiz in progress: <b>${esc(Q.label)}</b> · ${done}/${Q.items.length}</span><a class="btn primary sm" href="#quiz">Resume</a><button class="btn ghost sm" data-act="abandon">Discard</button></div>`}
 const simBlock=()=>`<div class="sim">${[10,30,60].map(n=>`<button data-act="sim" data-n="${n}"><b>${n}</b><span>${fmtDur(n*(+S.meta.settings.examSecs||90))} timed</span></button>`).join('')}</div>`;
-const importBanner=()=>PERSO?'':`<div class="banner"><p><b>Add your AnalystPrep material.</b> Import your personal data file (questions + study notes converted from your PDFs). It stays in this browser and unlocks ~2,600 extra questions and the full notes.</p><a class="btn primary" href="#settings">Import my file</a></div>`;
+const importBanner=()=>PERSO||MODE==='web'?'':`<div class="banner"><p><b>Add your AnalystPrep material.</b> Import your personal data file (questions + study notes converted from your PDFs). It stays in this browser and unlocks ~2,600 extra questions and the full notes.</p><a class="btn primary" href="#settings">Import my file</a></div>`;
 
 function vDash(){
   const g=gStats(),st=streak(),set=S.meta.settings;
