@@ -13,35 +13,38 @@
 <style>
 /* Layout: fixed left rail (nav + sync state) beside a single working column; rail becomes a top strip on phones. */
 :root{
-  --bg:#f2f4f7; --surface:#ffffff; --surface-2:#e9edf3; --line:#d6dce6;
-  --ink:#111a29; --ink-2:#465264; --ink-3:#768296;
-  --accent:#1d5bb8; --accent-ink:#ffffff; --accent-soft:#e0eaf9;
+  --bg:#f6f3ec; --surface:#fffdf8; --surface-2:#efe9dc; --line:#e2d9c6;
+  --ink:#0f1f3d; --ink-2:#3e4a64; --ink-3:#76809a;
+  --accent:#15295a; --accent-ink:#f3dc9a; --accent-soft:#e5e9f3;
   --ok:#0a7d34; --ok-bg:#e3f4e8; --ko:#b3261e; --ko-bg:#fbe7e5;
-  --st-good:#0ca30c; --st-warn:#fab219; --st-crit:#d03b3b; --st-none:#b9c1cd;
-  --q0:#e9edf3; --q1:#cde2fb; --q2:#9ec5f4; --q3:#5598e7; --q4:#2a78d6; --q5:#184f95;
-  --shadow:0 1px 2px rgba(17,26,41,.06),0 4px 14px rgba(17,26,41,.05);
+  --st-good:#0ca30c; --st-warn:#fab219; --st-crit:#d03b3b; --st-none:#c2bba9;
+  --q0:#efe9dc; --q1:#f3e6c2; --q2:#e6cb84; --q3:#cfa84f; --q4:#4a6296; --q5:#15295a;
+  --navy:#0f1f3d; --navy-deep:#091530; --navy-line:#1c3160; --gold:#c9a24a; --gold-2:#e8c977; --gold-ink:#9a7624;
+  --shadow:0 1px 2px rgba(15,31,61,.06),0 6px 18px rgba(15,31,61,.06);
   --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0d131c; --surface:#151d29; --surface-2:#1d2735; --line:#2a3647;
-  --ink:#e7ecf3; --ink-2:#a8b3c3; --ink-3:#7c889a;
-  --accent:#5c9cf1; --accent-ink:#0a1220; --accent-soft:#1a2b45;
+  --bg:#0a1427; --surface:#0f1d37; --surface-2:#172a4c; --line:#24395f;
+  --ink:#f1ece0; --ink-2:#c3c8d4; --ink-3:#8b95ab;
+  --accent:#d6b25e; --accent-ink:#0a1427; --accent-soft:#2c3240;
   --ok:#5fd18a; --ok-bg:#12301f; --ko:#ff8a80; --ko-bg:#3a1a19;
-  --st-none:#465163;
-  --q0:#1d2735; --q1:#1c3a63; --q2:#1c5cab; --q3:#2a78d6; --q4:#5598e7; --q5:#9ec5f4;
-  --shadow:0 1px 2px rgba(0,0,0,.3);
+  --st-none:#3a4a66;
+  --q0:#172a4c; --q1:#3b3d3a; --q2:#6c5f35; --q3:#9d8238; --q4:#c9a24a; --q5:#ecd08a;
+  --navy:#08122a; --navy-deep:#050c1d; --navy-line:#1a2c50; --gold:#c9a24a; --gold-2:#e8c977; --gold-ink:#d6b25e;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
-  --bg:#0d131c; --surface:#151d29; --surface-2:#1d2735; --line:#2a3647;
-  --ink:#e7ecf3; --ink-2:#a8b3c3; --ink-3:#7c889a;
-  --accent:#5c9cf1; --accent-ink:#0a1220; --accent-soft:#1a2b45;
+  --bg:#0a1427; --surface:#0f1d37; --surface-2:#172a4c; --line:#24395f;
+  --ink:#f1ece0; --ink-2:#c3c8d4; --ink-3:#8b95ab;
+  --accent:#d6b25e; --accent-ink:#0a1427; --accent-soft:#2c3240;
   --ok:#5fd18a; --ok-bg:#12301f; --ko:#ff8a80; --ko-bg:#3a1a19;
-  --st-none:#465163;
-  --q0:#1d2735; --q1:#1c3a63; --q2:#1c5cab; --q3:#2a78d6; --q4:#5598e7; --q5:#9ec5f4;
-  --shadow:0 1px 2px rgba(0,0,0,.3);
+  --st-none:#3a4a66;
+  --q0:#172a4c; --q1:#3b3d3a; --q2:#6c5f35; --q3:#9d8238; --q4:#c9a24a; --q5:#ecd08a;
+  --navy:#08122a; --navy-deep:#050c1d; --navy-line:#1a2c50; --gold:#c9a24a; --gold-2:#e8c977; --gold-ink:#d6b25e;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -359,37 +362,76 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .loslinks a:hover{background:var(--surface-2)}
 .loslinks a.on{background:var(--accent-soft)}
 .loslinks a.done b{color:var(--ok)}
-.reader{display:flex;flex-direction:column;gap:16px}
-.rbar{position:sticky;top:0;z-index:6;background:var(--bg);margin:0 -4px;padding:10px 4px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center}
+main.wide{max-width:none}
+.rail{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-deep) 100%);border-right:1px solid var(--navy-line);color:#e9e3d2}
+.rail .brand-mark{background:linear-gradient(135deg,var(--gold-2),var(--gold));color:var(--navy);box-shadow:0 2px 10px -2px rgba(201,162,74,.6)}
+.rail .brand b{color:#f6f1e4}
+.rail .brand span{color:#9ea7bd}
+.rail .nav a{color:#c3c9d8}
+.rail .nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.rail .nav a.on{background:rgba(232,201,119,.13);color:var(--gold-2);box-shadow:inset 3px 0 0 var(--gold)}
+.rail .nav .badge,.rail .nav a.on .badge{background:rgba(232,201,119,.18);color:var(--gold-2)}
+.rail .askfab{background:transparent;border-color:rgba(232,201,119,.45);color:var(--gold-2)}
+.rail .askfab:hover{background:rgba(232,201,119,.1)}
+.rail .sync,.rail .who{color:#9ea7bd;border-top-color:rgba(255,255,255,.1)}
+.rail .who b{color:#f6f1e4}
+.rail .who .btn{background:transparent;color:#e9e3d2;border-color:rgba(255,255,255,.22)}
+.kpi.hero{background:radial-gradient(120% 140% at 0% 0%,#22407a 0%,var(--navy) 55%,var(--navy-deep) 100%);border-color:var(--navy);color:#f6f1e4}
+.kpi.hero .v{color:var(--gold-2)}
+.kpi.hero .l,.kpi.hero .v small,.kpi.hero .eyebrow{color:#b9c0d1}
+.page-head h1{position:relative}
+.page-head:not(.rhead) h1::after{content:"";display:block;width:44px;height:3px;border-radius:3px;margin-top:10px;background:linear-gradient(90deg,var(--gold),var(--gold-2))}
+.eyebrow{color:var(--gold-ink)}
+.btn.primary{box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 6px 16px -10px rgba(10,20,40,.7)}
+.seg button.on{box-shadow:inset 0 -2px 0 var(--gold)}
+.banner{background:linear-gradient(120deg,var(--navy),#1d3a72);color:#f6f1e4}
+.banner .btn.primary{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.auth{background:radial-gradient(90% 70% at 50% 0%,#1d3a72 0%,var(--navy) 55%,var(--navy-deep) 100%)}
+.authcard{box-shadow:0 30px 60px -30px rgba(0,0,0,.6);border-top:3px solid var(--gold)}
+.rhead{margin-bottom:10px}
+.reader{display:flex;flex-direction:column;gap:18px}
+.rbar{position:sticky;top:0;z-index:6;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);margin:0 -8px;padding:10px 8px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 18px;align-items:center;border-bottom:1px solid var(--line)}
 .steps{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px}
 .steps::-webkit-scrollbar{display:none}
-.steps a{flex:none;font:500 .78rem var(--f-mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink-2);text-decoration:none;background:var(--surface)}
-.steps a:hover{border-color:var(--ink-3)}
-.steps a.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
-.steps a.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.rtools{display:flex;gap:4px;align-items:center}
-.rtools .seg{width:auto;margin-right:6px}
-.rtools .seg button{padding:4px 10px;font-size:.78rem}
-.rprog{grid-column:1/-1;height:3px;background:var(--line);border-radius:3px;overflow:hidden}
-.rprog i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
-.reader .note-layout{grid-template-columns:minmax(0,1fr) 320px}
-.reader.focus .note-layout{grid-template-columns:1fr}
-.reader.focus .note-side{display:none}
-.reader .pdfnote{display:flex;flex-direction:column;gap:16px;width:100%;max-width:calc(820px * var(--nz,1));margin-inline:auto}
-.loshead{display:flex;flex-direction:column;gap:4px;padding:0 4px}
-.loshead h2{margin:0;font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.3;text-wrap:balance}
-.pdfdoc{border-radius:14px;padding:clamp(14px,3vw,34px) clamp(4px,2vw,22px);box-shadow:0 0 0 1px var(--line),0 12px 32px -18px rgba(0,0,0,.35);transition:background .2s}
+.steps a{flex:none;font:500 .8rem var(--f-mono);padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:var(--ink-2);text-decoration:none;background:var(--surface);transition:border-color .15s,background .15s}
+.steps a:hover{border-color:var(--gold)}
+.steps a.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+.steps a.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 55%,transparent)}
+.rtools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.rtools .seg{width:auto}
+.rtools .seg button{padding:5px 11px;font-size:.8rem}
+.rprog{grid-column:1/-1;height:3px;margin:0 -8px;background:transparent;overflow:hidden}
+.rprog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-2));transition:width .15s}
+.rbody{display:grid;grid-template-columns:280px minmax(0,1fr);gap:clamp(18px,2.4vw,36px);align-items:start}
+.reader.focus .rbody{grid-template-columns:1fr}
+.reader.focus .rrail{display:none}
+.rrail{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 96px);overflow-y:auto;scrollbar-width:thin}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.rcard .seg{flex-wrap:wrap}
+.rring{display:flex;align-items:center;gap:12px}
+.rring svg{width:52px;height:52px;flex:none}
+.rring b{display:block;font:600 1.15rem var(--f-mono)}
+.rring span{font-size:.8rem;color:var(--ink-3)}
+.rrail .loslinks a{grid-template-columns:40px minmax(0,1fr)}
+.rdoc{display:flex;flex-direction:column;gap:18px;width:100%;min-width:0;margin-inline:auto;max-width:calc(1060px * var(--nz,1))}
+.rdoc.two{max-width:calc(1900px * var(--nz,1))}
+.loshead{display:flex;flex-direction:column;gap:4px;padding:2px 2px 0;border-left:3px solid var(--gold);padding-left:14px}
+.loshead .eyebrow{color:var(--gold-ink)}
+.loshead h2{margin:0;font-size:clamp(1.2rem,1.9vw,1.6rem);line-height:1.25}
+.pdfdoc{border-radius:16px;padding:clamp(16px,2.6vw,40px) clamp(6px,2vw,30px);box-shadow:0 0 0 1px var(--line),0 18px 40px -24px rgba(10,20,40,.45);transition:background .2s}
 .pdfdoc .pdfb{background:none;border-radius:0}
+.pdfdoc.two .pdfb{display:grid;grid-template-columns:1fr 1fr;gap:6px 36px;align-items:start}
 .pdfdoc.tone-paper{background:#fff}
 .pdfdoc.tone-sepia{background:#f5ecd9}
 .pdfdoc.tone-sepia canvas{mix-blend-mode:multiply}
 .pdfdoc.tone-night{background:#fff;filter:invert(.885) hue-rotate(180deg);box-shadow:none}
-.rnext{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.rnext{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;padding-top:4px}
+.btn.lg{padding:11px 20px;font-size:1rem}
 .lospips{display:inline-flex;gap:3px;vertical-align:middle;margin-right:2px}
 .lospips i{width:8px;height:8px;border-radius:2px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
-.lospips i.on{background:var(--ok);box-shadow:none}
-@media (max-width:1020px){.reader .note-layout{grid-template-columns:1fr}.rbar{grid-template-columns:1fr}.rtools{justify-content:flex-end}}
-@media (max-width:600px){.pdfdoc{border-radius:8px;padding:10px 2px}.rtools .seg{margin-right:auto}}
+.lospips i.on{background:var(--gold);box-shadow:none}
+@media (max-width:1100px){.rbody{grid-template-columns:1fr}.rrail{position:static;max-height:none;order:2}.rbar{grid-template-columns:1fr}.rtools{justify-content:flex-start}.pdfdoc.two .pdfb{grid-template-columns:1fr}}
+@media (max-width:600px){.pdfdoc{border-radius:8px;padding:10px 2px}}
 .loshead{display:flex;flex-direction:column;gap:2px}
 .loshead b{font-size:1.1rem;line-height:1.35}
 .loslinks b{font:500 .78rem var(--f-mono);color:var(--accent)}
@@ -903,7 +945,7 @@ function render(){
   if(r==='quiz')html=Q?vQuiz():'';
   else html=(Q&&r!=='settings'?vResume():'')+viewFor(r);
   if(r==='quiz'&&!Q){go('builder');return}
-  $('#main').innerHTML=html;window.scrollTo(0,0);afterRender(r);
+  $('#main').innerHTML=html;$('#main').classList.toggle('wide',r.startsWith('note-')&&!!$('#main .reader'));window.scrollTo(0,0);afterRender(r);
 }
 function viewFor(r){
   if(r.startsWith('subject-'))return vSubject(+r.split('-')[1]);
@@ -1063,7 +1105,7 @@ function vNote(s,r,k){
   let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
   `;
   const pn=pdfNote(s,r);
-  if(pn)return h+vPdfNote(s,r,k,pn,{c,x,st,prev,next});
+  if(pn)return`<header class="page-head rhead"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button></div></header>`+vPdfNote(s,r,k,pn,{c,x,st,prev,next});
   h+=`<div class="note-layout"><article class="panel note">`;
   if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Add your AnalystPrep PDFs in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
   if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
@@ -1082,22 +1124,35 @@ const READER=[['paper','Paper'],['sepia','Sepia'],['night','Night']];
 const readerTone=()=>UI.tone&&UI.tone!=='auto'?UI.tone:(document.documentElement.dataset.theme==='dark'||(document.documentElement.dataset.theme!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))?'night':'paper';
 function vPdfNote(s,r,k,pn,o){
   const{c,x,st,prev,next}=o,L=pn.m.los.length?pn.m.los:[{c:'',t:c.r[r-1]}],n=L.length;k=Math.min(Math.max(1,k||1),n);
-  const lk=L[k-1],done=losDone(s,r),isDone=done.includes(k),lab=l=>l.c?secLabel(r,l):'Reading';
+  const lk=L[k-1],done=losDone(s,r),isDone=done.includes(k),lab=l=>l.c?secLabel(r,l):'Reading',code=l=>l.c?(l.std?esc(l.c):r+esc(l.c)):'R'+r;
   const nxH=k<n?`#note-${s}-${r}-${k+1}`:next?`#note-${next[0]}-${next[1]}`:'',nxL=k<n?lab(L[k]):next?subj(next[0]).code+' R'+next[1]:'';
   const pvH=k>1?`#note-${s}-${r}-${k-1}`:prev?`#note-${prev[0]}-${prev[1]}`:'',pvL=k>1?lab(L[k-2]):prev?subj(prev[0]).code+' R'+prev[1]:'';
-  const z=UI.nzoom||1,tone=readerTone();
-  let h=`<div class="reader ${UI.nfocus?'focus':''}" style="--nz:${z}"><div class="rbar"><div class="steps" role="tablist">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'cur':''} ${done.includes(i+1)?'done':''}" title="${esc(lab(l)+' · '+l.t)}">${done.includes(i+1)?'✓ ':''}${l.c?(l.std?esc(l.c):r+esc(l.c)):'R'+r}</a>`).join('')}</div>
-   <div class="rtools"><div class="seg sm">${READER.map(([v,t])=>`<button data-act="nTone" data-v="${v}" class="${tone===v?'on':''}">${t}</button>`).join('')}</div><button class="btn sm ghost" data-act="nZoom" data-d="-1" aria-label="Smaller">A−</button><button class="btn sm ghost" data-act="nZoom" data-d="1" aria-label="Larger">A+</button><button class="btn sm ghost" data-act="nFocus" title="Hide the side panel">${UI.nfocus?'Show panel':'Focus'}</button></div><div class="rprog"><i id="rprog"></i></div></div>
-   <div class="note-layout"><article class="note pdfnote">
-   <div class="loshead"><span class="eyebrow">${esc(lab(lk))}${n>1?` · ${k} of ${n}`:''}</span><h2>${esc(lk.t)}</h2></div>
-   <div class="pdfdoc tone-${tone}" id="pdfdoc">${pdfBand(pn.f,pn.m.los.length?secRegion(pn.f,pn.m,k-1):pn.m,PX0,1)}</div>
-   <div class="rnext">${pvH?`<a class="btn" href="${pvH}">← ${esc(pvL)}</a>`:'<span></span>'}
-     <div class="row">${isDone?`<button class="btn ghost" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-off="1">✓ Read · undo</button>`:''}${nxH?`<button class="btn primary" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-go="${nxH}">${esc(nxL)} →</button>`:isDone?'':`<button class="btn primary" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}">Mark read</button>`}</div></div>
-   </article><aside class="side note-side">${progressPanel(s,r,st,x)}
-   <section class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h3>In this reading</h3><span class="mono small muted">${done.length}/${n}</span></div><div class="bar"><i style="width:${done.length/n*100}%"></i></div><div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''} ${done.includes(i+1)?'done':''}"><b>${done.includes(i+1)?'✓':l.c?(l.std?esc(l.c):r+esc(l.c)):''}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>
-   <div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div></div>`;
-  return h;
+  const z=UI.nzoom||1,tone=readerTone(),lay=readerLayout();
+  return`<div class="reader ${UI.nfocus?'focus':''}" style="--nz:${z}">
+   <div class="rbar"><div class="steps">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'cur':''} ${done.includes(i+1)?'done':''}" title="${esc(lab(l)+' · '+l.t)}">${done.includes(i+1)?'✓ ':''}${code(l)}</a>`).join('')}</div>
+    <div class="rtools">
+     <div class="seg">${READER.map(([v,t])=>`<button data-act="nTone" data-v="${v}" class="${tone===v?'on':''}">${t}</button>`).join('')}</div>
+     <div class="seg">${[['one','1 page'],['two','2 pages']].map(([v,t])=>`<button data-act="nLayout" data-v="${v}" class="${lay===v?'on':''}">${t}</button>`).join('')}</div>
+     <div class="seg"><button data-act="nZoom" data-d="-1" aria-label="Smaller text">A−</button><button data-act="nZoom" data-d="1" aria-label="Larger text">A+</button></div>
+     <button class="btn sm ghost" data-act="nFocus" title="Show or hide the side panel">${UI.nfocus?'☰ Panel':'⤢ Focus'}</button></div>
+    <div class="rprog"><i id="rprog"></i></div></div>
+   <div class="rbody">
+    <aside class="rrail">
+     <section class="rcard"><p class="eyebrow">${esc(c.code)} · Reading ${r}</p><div class="rring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(done.length/n*97.4).toFixed(1)} 97.4" transform="rotate(-90 18 18)"/></svg><div><b>${done.length}/${n}</b><span>${n>1?'LOS read':'read'}</span></div></div>
+      <div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''} ${done.includes(i+1)?'done':''}"><b>${done.includes(i+1)?'✓':code(l)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>
+     <section class="rcard"><p class="eyebrow">Status</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([v,t])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${v}" class="${st===v?'on':''}">${t}</button>`).join('')}</div>
+      <button class="btn primary" style="justify-content:center" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading · ${x.total}</button>
+      <span class="small muted">Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>
+     <div class="row" style="justify-content:space-between">${prev?`<a class="btn sm ghost" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm ghost" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div>
+    </aside>
+    <article class="rdoc ${lay}">
+     <div class="loshead"><span class="eyebrow">${esc(lab(lk))}${n>1?` · ${k} of ${n}`:''}</span><h2>${esc(lk.t)}</h2></div>
+     <div class="pdfdoc tone-${tone} ${lay}" id="pdfdoc">${pdfBand(pn.f,pn.m.los.length?secRegion(pn.f,pn.m,k-1):pn.m,PX0,1)}</div>
+     <div class="rnext">${pvH?`<a class="btn" href="${pvH}">← ${esc(pvL)}</a>`:'<span></span>'}
+      <div class="row">${isDone?`<button class="btn ghost" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-off="1">✓ Read · undo</button>`:''}${nxH?`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-go="${nxH}">${esc(nxL)} →</button>`:isDone?'':`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}">Mark read</button>`}</div></div>
+    </article></div></div>`;
 }
+const readerLayout=()=>UI.nlayout||(innerWidth>=1500?'two':'one');
 
 function vReview(){
   const g=gStats();const groups=[];
@@ -1279,6 +1334,7 @@ const ACT={
   reviewGroup:el=>startQuiz(shuffle(el.dataset.ids.split(',').map(id=>QID[id]).filter(Boolean)),{mode:'practice',label:el.dataset.label}),
   nTone:el=>{UI.tone=el.dataset.v;saveUI();const d=$('#pdfdoc');if(d)d.className='pdfdoc tone-'+UI.tone;el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el))},
   nZoom:el=>{UI.nzoom=Math.min(1.6,Math.max(.8,Math.round(((UI.nzoom||1)+(+el.dataset.d)*.1)*10)/10));if(+el.dataset.d>0&&!UI.nfocus&&innerWidth>1020)UI.nfocus=true;saveUI();keepScroll(render)},
+  nLayout:el=>{UI.nlayout=el.dataset.v;saveUI();keepScroll(render)},
   nFocus:()=>{UI.nfocus=!UI.nfocus;saveUI();keepScroll(render)},
   losDone:el=>{const s=+el.dataset.s,r=+el.dataset.r,k=+el.dataset.k,key=s+'-'+r;let d=losDone(s,r).filter(x=>x!==k);if(!el.dataset.off)d.push(k);d.sort((a,b)=>a-b);S.meta.los[key]=d;
     const n=pdfNote(s,r).m.los.length||1;if(d.length>=n&&!readSt(s,r))S.meta.read[key]={st:'read',ts:Date.now()};touch('meta');
