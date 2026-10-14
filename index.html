@@ -358,6 +358,38 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .loslinks a{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:.85rem;line-height:1.35}
 .loslinks a:hover{background:var(--surface-2)}
 .loslinks a.on{background:var(--accent-soft)}
+.loslinks a.done b{color:var(--ok)}
+.reader{display:flex;flex-direction:column;gap:16px}
+.rbar{position:sticky;top:0;z-index:6;background:var(--bg);margin:0 -4px;padding:10px 4px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center}
+.steps{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px}
+.steps::-webkit-scrollbar{display:none}
+.steps a{flex:none;font:500 .78rem var(--f-mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--ink-2);text-decoration:none;background:var(--surface)}
+.steps a:hover{border-color:var(--ink-3)}
+.steps a.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.steps a.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rtools{display:flex;gap:4px;align-items:center}
+.rtools .seg{width:auto;margin-right:6px}
+.rtools .seg button{padding:4px 10px;font-size:.78rem}
+.rprog{grid-column:1/-1;height:3px;background:var(--line);border-radius:3px;overflow:hidden}
+.rprog i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.reader .note-layout{grid-template-columns:minmax(0,1fr) 320px}
+.reader.focus .note-layout{grid-template-columns:1fr}
+.reader.focus .note-side{display:none}
+.reader .pdfnote{display:flex;flex-direction:column;gap:16px;width:100%;max-width:calc(820px * var(--nz,1));margin-inline:auto}
+.loshead{display:flex;flex-direction:column;gap:4px;padding:0 4px}
+.loshead h2{margin:0;font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.3;text-wrap:balance}
+.pdfdoc{border-radius:14px;padding:clamp(14px,3vw,34px) clamp(4px,2vw,22px);box-shadow:0 0 0 1px var(--line),0 12px 32px -18px rgba(0,0,0,.35);transition:background .2s}
+.pdfdoc .pdfb{background:none;border-radius:0}
+.pdfdoc.tone-paper{background:#fff}
+.pdfdoc.tone-sepia{background:#f5ecd9}
+.pdfdoc.tone-sepia canvas{mix-blend-mode:multiply}
+.pdfdoc.tone-night{background:#fff;filter:invert(.885) hue-rotate(180deg);box-shadow:none}
+.rnext{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.lospips{display:inline-flex;gap:3px;vertical-align:middle;margin-right:2px}
+.lospips i{width:8px;height:8px;border-radius:2px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+.lospips i.on{background:var(--ok);box-shadow:none}
+@media (max-width:1020px){.reader .note-layout{grid-template-columns:1fr}.rbar{grid-template-columns:1fr}.rtools{justify-content:flex-end}}
+@media (max-width:600px){.pdfdoc{border-radius:8px;padding:10px 2px}.rtools .seg{margin-right:auto}}
 .loshead{display:flex;flex-direction:column;gap:2px}
 .loshead b{font-size:1.1rem;line-height:1.35}
 .loslinks b{font:500 .78rem var(--f-mono);color:var(--accent)}
@@ -438,7 +470,7 @@ async function loadPerso(){try{PERSO=(await idbGet('perso'))||null}catch(e){PERS
 /* ---------- the user's own AnalystPrep PDFs: parsed and rendered in this browser with pdf.js, never uploaded ---------- */
 const PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
 const PX0=50,PX1=562; // horizontal crop of the PDF page (points), drops the side margins
-let PDFLIB=null,PDFIO=null;const DOCS={},BANDS=new Map();
+let PDFLIB=null,PDFIO=null;const DOCS={},BANDS=new Map(),TRIM=new Map();
 function hasPdx(){return!!(PDX&&Object.keys(PDX.subj||{}).length)}
 function mineOnly(){if(!hasPdx())return false;try{return S.meta.settings.onlyMine!==false}catch(e){return true}}
 function pdfjs(){
@@ -541,10 +573,11 @@ async function dropPdfSubject(s){
   delete PDX.subj[s];BANDS.clear();await idbSet('pdfidx',hasPdx()?PDX:null).catch(()=>{});if(!hasPdx())PDX=null;indexAll();render();
 }
 /* rendering: a region {p0,y0,p1,y1} becomes one canvas per page slice, drawn lazily */
-function pdfBand(f,R,x0){
+function pdfBand(f,R,x0,trim){
   const m=PDX&&PDX.files[f];if(!m||!R)return'';x0=x0||PX0;let h='';
   for(let p=R.p0;p<=R.p1;p++){const e=m.ext&&m.ext[p],a=p===R.p0?R.y0:e?e[0]-4:36,b=p===R.p1?R.y1:e?e[1]+5:m.h-64;if(b-a<3||(e&&p===R.p1&&R.y1<e[0]))continue;
-    h+=`<canvas data-pf="${f}" data-pp="${p}" data-py0="${a.toFixed(1)}" data-py1="${b.toFixed(1)}" data-px0="${x0.toFixed(1)}" style="aspect-ratio:${(PX1-x0).toFixed(1)}/${(b-a).toFixed(1)}"></canvas>`}
+    let y0=a,y1=b,tk='';if(trim){tk=[f,p,a.toFixed(1),b.toFixed(1)].join('|');const tr=TRIM.get(tk);if(tr===null)continue;if(tr){y0=tr[0];y1=tr[1];tk=''}}
+    h+=`<canvas data-pf="${f}" data-pp="${p}" data-py0="${y0.toFixed(1)}" data-py1="${y1.toFixed(1)}" data-px0="${x0.toFixed(1)}" ${tk?`data-trim="${tk}"`:''} style="aspect-ratio:${(PX1-x0).toFixed(1)}/${(y1-y0).toFixed(1)}"></canvas>`}
   return`<span class="pdfb">${h}</span>`;
 }
 function getDoc(f){
@@ -563,6 +596,14 @@ async function drawSeg(c){
     const ctx=off.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,off.width,off.height);
     await page.render({canvasContext:ctx,viewport:page.getViewport({scale:sc,offsetX:-x0*sc,offsetY:-y0*sc})}).promise;
     if(c._tok!==tok)return;
+    if(c.dataset.trim){/* notes: cut the blank page margins so consecutive pages read as one sheet */
+      const tk=c.dataset.trim;delete c.dataset.trim;const w=off.width,hh=off.height,px=ctx.getImageData(0,0,w,hh).data;let top=-1,bot=-1;
+      for(let y=0;y<hh;y++){const o=y*w*4;for(let i=0;i<w;i+=3){const j=o+i*4;if(px[j]<235||px[j+1]<235||px[j+2]<235){if(top<0)top=y;bot=y;break}}}
+      if(top<0){TRIM.set(tk,null);c.style.display='none';return}
+      const pad=Math.round(10*sc),t0=Math.max(0,top-pad),t1=Math.min(hh,bot+pad);
+      const ny0=y0+t0/sc,ny1=y0+t1/sc;TRIM.set(tk,[ny0,ny1]);c.dataset.py0=ny0.toFixed(1);c.dataset.py1=ny1.toFixed(1);c.style.aspectRatio=`${PX1-x0}/${(ny1-ny0).toFixed(1)}`;
+      const cut=document.createElement('canvas');cut.width=w;cut.height=Math.max(1,t1-t0);cut.getContext('2d').drawImage(off,0,-t0);return blit(c,cut);
+    }
     if(off.width*off.height<1.2e6){BANDS.set(k,off);if(BANDS.size>40)BANDS.delete(BANDS.keys().next().value)}
     blit(c,off);
   }catch(e){c.dataset.err='1'}
@@ -593,9 +634,9 @@ const MODE='web'==='web'?'web':'artifact';
 const SUPA={url:"https://opqdojcqijcgzalfyszb.supabase.co",key:"sb_publishable_qkUK-JBe6qp9CqF77T4Uhg_a36XAJV6"};
 let SB=null;
 let LS='cfaqcm.v1',LS_ACTIVE='cfaqcm.active';const LS_UI='cfaqcm.ui';
-function blank(){return{prog:{},sessions:[],meta:{presets:[],daily:{},read:{},settings:{examDate:'',partielDate:'',partielName:'',examSecs:90}},t:{prog:0,sessions:0,meta:0}}}
+function blank(){return{prog:{},sessions:[],meta:{presets:[],daily:{},read:{},los:{},settings:{examDate:'',partielDate:'',partielName:'',examSecs:90}},t:{prog:0,sessions:0,meta:0}}}
 let S=blank();
-function normalize(){const b=blank();S=Object.assign(b,S);S.meta=Object.assign(b.meta,S.meta||{});S.meta.settings=Object.assign(blank().meta.settings,S.meta.settings||{});S.meta.read=S.meta.read||{};S.t=Object.assign({prog:0,sessions:0,meta:0},S.t||{});if(!Array.isArray(S.sessions))S.sessions=[];if(!Array.isArray(S.meta.presets))S.meta.presets=[]}
+function normalize(){const b=blank();S=Object.assign(b,S);S.meta=Object.assign(b.meta,S.meta||{});S.meta.settings=Object.assign(blank().meta.settings,S.meta.settings||{});S.meta.read=S.meta.read||{};S.meta.los=S.meta.los||{};S.t=Object.assign({prog:0,sessions:0,meta:0},S.t||{});if(!Array.isArray(S.sessions))S.sessions=[];if(!Array.isArray(S.meta.presets))S.meta.presets=[]}
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 if(MODE!=='web'){const s=lsGet(LS);if(s)S=s;normalize()}
@@ -1008,7 +1049,8 @@ function vNotes(){
   const tot=CURR.reduce((a,c)=>a+c.r.length,0),done=CURR.reduce((a,c)=>a+readCount(c.id),0);
   let h=`<header class="page-head"><div><p class="eyebrow">${done}/${tot} readings read</p><h1>Study notes</h1></div><div class="row"><button class="btn" data-act="askOpen">Ask Claude</button></div></header><div class="stack">${importBanner()}`;
   CURR.forEach(c=>{const n=readCount(c.id);h+=`<details class="panel" ${UI.notesOpen.includes(c.id)?'open':''} data-nopen="${c.id}"><summary style="cursor:pointer;list-style:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(80px,200px) auto;gap:14px;align-items:center"><h3>${esc(c.name)} <span class="mono small muted">${c.code}</span></h3><div class="bar"><i style="width:${n/c.r.length*100}%"></i></div><span class="mono small">${n}/${c.r.length}</span></summary><div class="list" style="margin-top:10px">`;
-    c.r.forEach((t,i)=>{const r=i+1,x=rStats(c.id,r),has=!!pdfNote(c.id,r)||!!noteOf(c.id,r)||!!(RAWNOTE[c.id]||{})[r];h+=`<a class="li" href="#note-${c.id}-${r}" style="text-decoration:none;color:inherit"><div class="t"><b><span class="mono muted small">R${r}</span> ${esc(t)}</b><span>${has?'':'no notes imported yet · '}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc):''}</span></div>${readChip(c.id,r)}</a>`});
+    c.r.forEach((t,i)=>{const r=i+1,x=rStats(c.id,r),pn=pdfNote(c.id,r),has=!!pn||!!noteOf(c.id,r)||!!(RAWNOTE[c.id]||{})[r];const ld=pn?losDone(c.id,r):[],nl=pn?pn.m.los.length||1:0,nx=pn?(Array.from({length:nl},(_,j)=>j+1).find(j=>!ld.includes(j))||1):1;
+      h+=`<a class="li" href="#note-${c.id}-${r}${pn?'-'+nx:''}" style="text-decoration:none;color:inherit"><div class="t"><b><span class="mono muted small">R${r}</span> ${esc(t)}</b><span>${has?'':'no notes imported yet · '}${pn?`<span class="lospips">${Array.from({length:nl},(_,j)=>`<i class="${ld.includes(j+1)?'on':''}"></i>`).join('')}</span> ${ld.length}/${nl} LOS · `:''}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc):''}</span></div>${readChip(c.id,r)}</a>`});
     h+='</div></details>'});
   return h+'</div>';
 }
@@ -1021,24 +1063,39 @@ function vNote(s,r,k){
   let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
   `;
   const pn=pdfNote(s,r);
-  const L=pn?pn.m.los:[];k=Math.min(Math.max(1,k||1),Math.max(1,L.length));
-  if(pn){const lk=L[k-1],pv=k>1?`#note-${s}-${r}-${k-1}`:prev?`#note-${prev[0]}-${prev[1]}`:'',nx=k<L.length?`#note-${s}-${r}-${k+1}`:next?`#note-${next[0]}-${next[1]}`:'';
-    const pvl=k>1?secLabel(r,L[k-2]):prev?subj(prev[0]).code+' R'+prev[1]:'',nxl=k<L.length?secLabel(r,L[k]):next?subj(next[0]).code+' R'+next[1]:'';
-    h+=`<div class="note-layout"><article class="note pdfnote stack" style="gap:14px">${lk?`<div class="loshead"><span class="mono small muted">${secLabel(r,lk)} · ${k}/${L.length}</span></div>`:''}<div class="pdfdoc" id="pdfdoc">${pdfBand(pn.f,secRegion(pn.f,pn.m,k-1))}</div>
-     <div class="row" style="justify-content:space-between">${pv?`<a class="btn" href="${pv}">← ${esc(pvl)}</a>`:'<span></span>'}${nx?`<a class="btn primary" href="${nx}">${esc(nxl)} →</a>`:''}</div>`}
-  else{
-    h+=`<div class="note-layout"><article class="panel note">`;
-    if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Add your AnalystPrep PDFs in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
-    if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
-    if(raw)h+=`<h2>${n?'Full AnalystPrep notes':'AnalystPrep notes'}</h2><p class="small muted">Text extracted from your PDF. Charts are missing and some formulas are garbled — the formula box on the right has clean versions.</p><div class="raw">${rawHtml(raw)}</div>`;
-  }
-  h+=`</article><aside class="side note-side"><section class="panel stack" style="gap:10px"><p class="eyebrow">My progress</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([k,l])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${k}" class="${st===k?'on':''}">${l}</button>`).join('')}</div><span class="small muted">${(S.meta.read[s+'-'+r]||{}).ts?'Updated '+fmtD(S.meta.read[s+'-'+r].ts)+' · ':''}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>`;
-  if(L.length)h+=`<section class="panel stack" style="gap:8px"><h3>In this reading</h3><div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''}"><b>${l.std?esc(l.c):r+esc(l.c)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>`;
-  if(!pn){
+  if(pn)return h+vPdfNote(s,r,k,pn,{c,x,st,prev,next});
+  h+=`<div class="note-layout"><article class="panel note">`;
+  if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Add your AnalystPrep PDFs in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
+  if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
+  if(raw)h+=`<h2>${n?'Full AnalystPrep notes':'AnalystPrep notes'}</h2><p class="small muted">Text extracted from your PDF. Charts are missing and some formulas are garbled — the formula box on the right has clean versions.</p><div class="raw">${rawHtml(raw)}</div>`;
+  h+=`</article><aside class="side note-side">${progressPanel(s,r,st,x)}`;
   if(n&&n.formulas&&n.formulas.length)h+=`<section class="panel stack" style="gap:10px"><h3>Key formulas</h3>${n.formulas.map(f=>`<div class="formula"><span class="small muted">${esc(f.name)}</span><code>${esc(f.f)}</code>${f.note?`<span class="small">${esc(f.note)}</span>`:''}</div>`).join('')}</section>`;
   if(n&&n.los&&n.los.length)h+=`<section class="panel stack" style="gap:10px"><h3>LOS reminders</h3><div class="loslist small">${n.los.map(l=>`<div><b>${r}${esc(l.code)}</b>${esc(l.title)}<br><span class="muted">${esc(l.rappel)}</span></div>`).join('')}</div></section>`;
-  if(n&&n.pitfalls&&n.pitfalls.length)h+=`<section class="panel stack" style="gap:8px"><h3>Exam traps</h3><ul class="pit">${n.pitfalls.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`;}
-  if(!pn)h+=`<div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div>`;
+  if(n&&n.pitfalls&&n.pitfalls.length)h+=`<section class="panel stack" style="gap:8px"><h3>Exam traps</h3><ul class="pit">${n.pitfalls.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`;
+  h+=`<div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div>`;
+  return h;
+}
+const progressPanel=(s,r,st,x)=>`<section class="panel stack" style="gap:10px"><p class="eyebrow">My progress</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([k,l])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${k}" class="${st===k?'on':''}">${l}</button>`).join('')}</div><span class="small muted">${(S.meta.read[s+'-'+r]||{}).ts?'Updated '+fmtD(S.meta.read[s+'-'+r].ts)+' · ':''}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>`;
+/* LOS read marks: S.meta.los["s-r"] = list of section numbers done */
+const losDone=(s,r)=>(S.meta.los||{})[s+'-'+r]||[];
+const READER=[['paper','Paper'],['sepia','Sepia'],['night','Night']];
+const readerTone=()=>UI.tone&&UI.tone!=='auto'?UI.tone:(document.documentElement.dataset.theme==='dark'||(document.documentElement.dataset.theme!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))?'night':'paper';
+function vPdfNote(s,r,k,pn,o){
+  const{c,x,st,prev,next}=o,L=pn.m.los.length?pn.m.los:[{c:'',t:c.r[r-1]}],n=L.length;k=Math.min(Math.max(1,k||1),n);
+  const lk=L[k-1],done=losDone(s,r),isDone=done.includes(k),lab=l=>l.c?secLabel(r,l):'Reading';
+  const nxH=k<n?`#note-${s}-${r}-${k+1}`:next?`#note-${next[0]}-${next[1]}`:'',nxL=k<n?lab(L[k]):next?subj(next[0]).code+' R'+next[1]:'';
+  const pvH=k>1?`#note-${s}-${r}-${k-1}`:prev?`#note-${prev[0]}-${prev[1]}`:'',pvL=k>1?lab(L[k-2]):prev?subj(prev[0]).code+' R'+prev[1]:'';
+  const z=UI.nzoom||1,tone=readerTone();
+  let h=`<div class="reader ${UI.nfocus?'focus':''}" style="--nz:${z}"><div class="rbar"><div class="steps" role="tablist">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'cur':''} ${done.includes(i+1)?'done':''}" title="${esc(lab(l)+' · '+l.t)}">${done.includes(i+1)?'✓ ':''}${l.c?(l.std?esc(l.c):r+esc(l.c)):'R'+r}</a>`).join('')}</div>
+   <div class="rtools"><div class="seg sm">${READER.map(([v,t])=>`<button data-act="nTone" data-v="${v}" class="${tone===v?'on':''}">${t}</button>`).join('')}</div><button class="btn sm ghost" data-act="nZoom" data-d="-1" aria-label="Smaller">A−</button><button class="btn sm ghost" data-act="nZoom" data-d="1" aria-label="Larger">A+</button><button class="btn sm ghost" data-act="nFocus" title="Hide the side panel">${UI.nfocus?'Show panel':'Focus'}</button></div><div class="rprog"><i id="rprog"></i></div></div>
+   <div class="note-layout"><article class="note pdfnote">
+   <div class="loshead"><span class="eyebrow">${esc(lab(lk))}${n>1?` · ${k} of ${n}`:''}</span><h2>${esc(lk.t)}</h2></div>
+   <div class="pdfdoc tone-${tone}" id="pdfdoc">${pdfBand(pn.f,pn.m.los.length?secRegion(pn.f,pn.m,k-1):pn.m,PX0,1)}</div>
+   <div class="rnext">${pvH?`<a class="btn" href="${pvH}">← ${esc(pvL)}</a>`:'<span></span>'}
+     <div class="row">${isDone?`<button class="btn ghost" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-off="1">✓ Read · undo</button>`:''}${nxH?`<button class="btn primary" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-go="${nxH}">${esc(nxL)} →</button>`:isDone?'':`<button class="btn primary" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}">Mark read</button>`}</div></div>
+   </article><aside class="side note-side">${progressPanel(s,r,st,x)}
+   <section class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h3>In this reading</h3><span class="mono small muted">${done.length}/${n}</span></div><div class="bar"><i style="width:${done.length/n*100}%"></i></div><div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''} ${done.includes(i+1)?'done':''}"><b>${done.includes(i+1)?'✓':l.c?(l.std?esc(l.c):r+esc(l.c)):''}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>
+   <div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div></div>`;
   return h;
 }
 
@@ -1169,6 +1226,7 @@ function afterRender(r){
 }
 function stamp(){if(!Q)return;const it=Q.items[Q.i];if(it&&!(Q.mode!=='exam'&&it.done))it.t=(it.t||0)+(Date.now()-Q.qStart)/1000;Q.qStart=Date.now();lsSet(LS_ACTIVE,Q)}
 function reRender(){saveUI();render()}
+function keepScroll(fn){const y=window.scrollY;fn();window.scrollTo(0,y)}
 function keepTimer(fn){const k=Q.qStart;fn();Q.qStart=k}
 const ACT={
   goto:el=>go(el.dataset.h),
@@ -1219,6 +1277,12 @@ const ACT={
   redoSame:el=>{const s=S.sessions.find(x=>x.id===el.dataset.id);startQuiz(shuffle(s.items.map(x=>QID[x[0]]).filter(Boolean)),{mode:s.mode,label:s.label,keys:s.keys})},
   reviewQuiz:el=>{const st=el.dataset.st;const qs=QB.filter(q=>{const p=S.prog[q.id];if(!p)return false;const w=p.n&&!p.l;return st==='flag'?p.f:st==='wrong'?w:(w||p.f)});startQuiz(shuffle(qs).slice(0,60),{mode:'practice',label:st==='flag'?'Review · flagged':st==='wrong'?'Review · missed':'Review'})},
   reviewGroup:el=>startQuiz(shuffle(el.dataset.ids.split(',').map(id=>QID[id]).filter(Boolean)),{mode:'practice',label:el.dataset.label}),
+  nTone:el=>{UI.tone=el.dataset.v;saveUI();const d=$('#pdfdoc');if(d)d.className='pdfdoc tone-'+UI.tone;el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el))},
+  nZoom:el=>{UI.nzoom=Math.min(1.6,Math.max(.8,Math.round(((UI.nzoom||1)+(+el.dataset.d)*.1)*10)/10));if(+el.dataset.d>0&&!UI.nfocus&&innerWidth>1020)UI.nfocus=true;saveUI();keepScroll(render)},
+  nFocus:()=>{UI.nfocus=!UI.nfocus;saveUI();keepScroll(render)},
+  losDone:el=>{const s=+el.dataset.s,r=+el.dataset.r,k=+el.dataset.k,key=s+'-'+r;let d=losDone(s,r).filter(x=>x!==k);if(!el.dataset.off)d.push(k);d.sort((a,b)=>a-b);S.meta.los[key]=d;
+    const n=pdfNote(s,r).m.los.length||1;if(d.length>=n&&!readSt(s,r))S.meta.read[key]={st:'read',ts:Date.now()};touch('meta');
+    if(el.dataset.go)go(el.dataset.go.slice(1));else{toast(el.dataset.off?'Marked as not read':d.length>=n?'Reading complete':'Marked as read');keepScroll(render)}},
   pdfDrop:el=>dropPdfSubject(+el.dataset.s).then(()=>toast('PDFs removed from this browser')),
   pdfJump:el=>{const p=+el.dataset.p,y=+el.dataset.y;const c=[...document.querySelectorAll('#pdfdoc canvas')].find(c=>+c.dataset.pp===p&&y>=+c.dataset.py0-1&&y<=+c.dataset.py1);
     if(c){const b=c.getBoundingClientRect();window.scrollTo({top:window.scrollY+b.top+(y-c.dataset.py0)/(c.dataset.py1-c.dataset.py0)*b.height-16,behavior:'smooth'})}},
@@ -1249,6 +1313,7 @@ document.addEventListener('keydown',e=>{
   else if(k==='f')ACT.flag();
   else if(exam&&k==='arrowright')ACT.next();else if(exam&&k==='arrowleft')ACT.prev();
 });
+window.addEventListener('scroll',()=>{const b=$('#rprog'),d=$('#pdfdoc');if(!b||!d)return;const r=d.getBoundingClientRect();b.style.width=Math.min(100,Math.max(0,(innerHeight*.6-r.top)/r.height*100))+'%'},{passive:true});
 const tip=$('#tip');
 document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el){tip.hidden=true;return}tip.textContent=el.dataset.tip;tip.hidden=false});
 document.addEventListener('mousemove',e=>{if(tip.hidden)return;const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-10;if(y+h>innerHeight-8)y=e.clientY-h-10;tip.style.left=x+'px';tip.style.top=y+'px'});
