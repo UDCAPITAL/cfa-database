@@ -367,6 +367,13 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .bt code{font:.8rem var(--f-mono);color:var(--gold-ink);white-space:normal}
 .bs{display:flex;gap:8px;align-items:center}
 @media (max-width:640px){.brow{grid-template-columns:1fr}.bs{order:3}}
+.loscheck{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 18px;border-radius:14px;background:linear-gradient(120deg,var(--navy),#1d3a72);color:#f6f1e4}
+.loscheck>div:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.loscheck .eyebrow{color:var(--gold-2);margin:0}
+.loscheck b{font:600 1.05rem var(--f-display)}
+.loscheck span{font-size:.84rem;color:#b9c0d1}
+.loscheck .btn{background:transparent;color:#f6f1e4;border-color:rgba(255,255,255,.3)}
+.loscheck .btn.primary{background:var(--gold);border-color:var(--gold);color:var(--navy)}
 .lacc{display:block;font:500 .72rem var(--f-mono);font-style:normal;margin-top:2px}
 .lacc.ok{color:var(--ok)}.lacc.mid{color:var(--gold-ink)}.lacc.ko{color:var(--ko)}
 .banner{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px;border-radius:12px;background:var(--accent-soft);color:var(--ink)}
@@ -1576,7 +1583,7 @@ function pickWeighted(list,n){
 function startQuiz(qs,opt){
   qs=(qs||[]).map(q=>q&&(q.gen||q.tpl)?newBonus(q.gen?q.id:q.tpl):q).filter(Boolean);
   if(!qs.length){toast('No question matches this selection.');return}
-  Q={id:Date.now().toString(36),items:qs.map(q=>({id:q.id,ch:null,done:false,t:0})),i:0,mode:opt.mode||'practice',label:opt.label||'Quiz',keys:opt.keys||[],start:Date.now(),qStart:Date.now(),limit:opt.mode==='exam'?qs.length*(+S.meta.settings.examSecs||90):0};
+  Q={id:Date.now().toString(36),items:qs.map(q=>({id:q.id,ch:null,done:false,t:0})),i:0,mode:opt.mode||'practice',label:opt.label||'Quiz',keys:opt.keys||[],back:opt.back||'',start:Date.now(),qStart:Date.now(),limit:opt.mode==='exam'?qs.length*(+S.meta.settings.examSecs||90):0};
   lsSet(LS_ACTIVE,Q);go('quiz');
 }
 function startSim(n){
@@ -1590,7 +1597,7 @@ function finishQuiz(){
   const items=Q.items.filter(it=>QID[it.id]&&(exam||it.done));
   if(!items.length){Q=null;lsSet(LS_ACTIVE,null);go('builder');return}
   const ok=items.filter(it=>it.ch===QID[it.id].a).length;
-  const ses={id:Q.id,ts:Q.start,end:Date.now(),mode:Q.mode,label:Q.label,keys:Q.keys,n:items.length,ok,items:items.map(it=>[it.id,it.ch,Math.round(it.t||0)])};
+  const ses={id:Q.id,back:Q.back||'',ts:Q.start,end:Date.now(),mode:Q.mode,label:Q.label,keys:Q.keys,n:items.length,ok,items:items.map(it=>[it.id,it.ch,Math.round(it.t||0)])};
   S.sessions.unshift(ses);if(S.sessions.length>100)S.sessions.length=100;
   touch('prog','meta','sessions');Q=null;lsSet(LS_ACTIVE,null);go('session-'+ses.id);
 }
@@ -1757,7 +1764,7 @@ function vSession(id){
   s.items.forEach(([qid,ch])=>{const q=QID[qid];if(!q)return;const k=q.s+'-'+q.r;(byR[k]||(byR[k]={n:0,ok:0})).n++;if(ch===q.a)byR[k].ok++});
   const wrongIds=s.items.filter(([qid,ch])=>QID[qid]&&ch!==QID[qid].a).map(x=>x[0]);
   const R=62,C=2*Math.PI*R;
-  let h=`<header class="page-head"><div><p class="eyebrow"><a href="#history">History</a> · ${fmtDT(s.ts)} · ${s.mode==='exam'?'Timed':'Practice'}</p><h1>${esc(s.label)}</h1></div><div class="row">${wrongIds.length?`<button class="btn" data-act="redoWrong" data-id="${s.id}">Redo the ${plural(wrongIds.length,'mistake')}</button>`:''}<button class="btn" data-act="redoSame" data-id="${s.id}">Redo this quiz</button><a class="btn primary" href="#builder">New quiz</a></div></header>
+  let h=`<header class="page-head"><div><p class="eyebrow"><a href="#history">History</a> · ${fmtDT(s.ts)} · ${s.mode==='exam'?'Timed':'Practice'}</p><h1>${esc(s.label)}</h1></div><div class="row">${s.back?`<a class="btn primary" href="${s.back}">Continue reading →</a>`:''}${wrongIds.length?`<button class="btn" data-act="redoWrong" data-id="${s.id}">Redo the ${plural(wrongIds.length,'mistake')}</button>`:''}<button class="btn" data-act="redoSame" data-id="${s.id}">Redo this quiz</button><a class="btn primary" href="#builder">New quiz</a></div></header>
   <div class="stack"><section class="panel res-hero"><svg class="ring" viewBox="0 0 150 150" role="img" aria-label="Score ${pct(acc)}"><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle cx="75" cy="75" r="${R}" fill="none" stroke="${acc>=MPS?'var(--ok)':'var(--accent)'}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C*acc} ${C}" transform="rotate(-90 75 75)"/><text x="75" y="82" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="30" fill="var(--ink)">${pct(acc)}</text></svg>
   <div class="stack" style="gap:12px"><p style="margin:0;font-size:1.05rem">${acc>=MPS?'Above the indicative '+pct(MPS)+' pass mark.':'Below the indicative '+pct(MPS)+' pass mark: '+plural(wrongIds.length,'question')+' to review.'}</p><div class="facts"><div><b>${s.ok}/${s.n}</b><span>correct</span></div><div><b>${fmtDur(dur)}</b><span>total time</span></div><div><b>${fmtDur(dur/s.n)}</b><span>per question (target 1:30)</span></div><div><b>${Object.keys(byR).length}</b><span>readings tested</span></div></div></div></section>
   <section class="panel"><div class="panel-head"><h2>By reading</h2></div><div class="tbl-wrap"><table><thead><tr><th>Topic</th><th>Reading</th><th class="n">Score</th><th style="width:30%">Accuracy</th></tr></thead><tbody>${Object.entries(byR).sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true})).map(([k,v])=>{const[si,ri]=k.split('-').map(Number);const c=subj(si);return`<tr class="click" data-act="goto" data-h="subject-${si}"><td class="mono">${c.code}</td><td>R${ri} · ${esc(c.r[ri-1])}</td><td class="n">${v.ok}/${v.n}</td><td><div class="bar"><i style="width:${v.ok/v.n*100}%"></i><span class="mps" style="left:${MPS*100}%"></span></div></td></tr>`}).join('')}</tbody></table></div></section>
@@ -1840,12 +1847,24 @@ function vPdfNote(s,r,k,pn,o){
     <article class="rdoc ${book?'book':lay}">
      ${book?'':`<div class="loshead"><span class="eyebrow">${esc(lab(lk))}${n>1?` · ${k} of ${n}`:''}</span><h2>${esc(lk.t)}</h2></div>`}
      ${book?`<div class="nbook" id="pdfdoc"><div class="nbdoc" id="nbdoc" data-f="${pn.f}" data-reg="${esc(JSON.stringify(reg))}" data-next="${k<n?esc(JSON.stringify(secRegion(pn.f,pn.m,k))):''}"><div class="nbload"><i></i><i></i><i></i><span>Preparing your notes…</span></div></div></div>`:`<div class="pdfdoc tone-${tone} ${lay}" id="pdfdoc">${pdfBand(pn.f,reg,PX0,1)}</div>`}
+     ${losCheckHtml(s,r,k,lk,lab,nxH)}
      <div class="rnext">${pvH?`<a class="btn" href="${pvH}">← ${esc(pvL)}</a>`:'<span></span>'}
       <div class="row">${isDone?`<button class="btn ghost" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-off="1">✓ Read · undo</button>`:''}${nxH?`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-go="${nxH}">${esc(nxL)} →</button>`:isDone?'':`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}">Mark read</button>`}</div></div>
     </article></div></div>`;
 }
 const losQs=(s,r,l)=>l&&l.c&&!l.std?(QBY[s]&&QBY[s][r]||[]).filter(q=>q.src==='ap'&&losLetter(q.los)===l.c):[];
 function losAcc(s,r,l){let att=0,ok=0;losQs(s,r,l).forEach(q=>{const p=S.prog[q.id];if(p&&p.n){att++;if(p.l)ok++}});return{att,acc:att?ok/att:null}}
+/* questions to check a LOS just read: its AnalystPrep questions (unseen and missed first), topped up with bonus drills of the reading */
+function losCheckPool(s,r,l){
+  let qs=losQs(s,r,l);if(!qs.length&&(!l||!l.c||l.std))qs=(QBY[s]&&QBY[s][r]||[]).filter(q=>q.src==='ap');
+  const rank=q=>{const p=S.prog[q.id];return!p||!p.n?0:!p.l?1:2};
+  return{ap:shuffle(qs).sort((a,b)=>rank(a)-rank(b)),bonus:BONUS.filter(T=>T.s===s&&T.r===r)};
+}
+function losCheckHtml(s,r,k,lk,lab,nxH){
+  const P=losCheckPool(s,r,lk),n=P.ap.length+(P.bonus.length?99:0);if(!n)return'';
+  return`<div class="loscheck"><div><p class="eyebrow">Check yourself</p><b>Quiz on ${esc(lab(lk))} before moving on</b><span>${P.ap.length?`${P.ap.length} AnalystPrep question${P.ap.length>1?'s':''} on this LOS${P.bonus.length?' + bonus drills':''}`:'Bonus drills of this reading'} · the LOS is marked as read.</span></div>
+   <div class="row">${[5,10].map(m=>`<button class="btn ${m===5?'primary':''}" data-act="losCheck" data-s="${s}" data-r="${r}" data-k="${k}" data-n="${m}" data-back="${nxH}">${m} questions</button>`).join('')}</div></div>`;
+}
 const readerLayout=()=>UI.nlayout||(innerWidth>=1500?'two':'one');
 
 function vReview(){
@@ -2034,6 +2053,10 @@ const ACT={
   bonusDrill:el=>{const n=+el.dataset.n||10;let L=BONUS;if(el.dataset.id)L=[BONUS_BY[el.dataset.id]];else if(el.dataset.s)L=BONUS.filter(T=>T.s===+el.dataset.s);else if(el.dataset.weak)L=BONUS.filter(T=>{const x=bStats(T);return x.n&&x.acc<.7});
     if(!L.length)return toast('Nothing to practise here yet.');const pick=[];let pool2=shuffle(L);while(pick.length<n){if(!pool2.length)pool2=shuffle(L);pick.push(QID[pool2.pop().id])}
     startQuiz(pick,{mode:'practice',label:el.dataset.id?'Bonus · '+BONUS_BY[el.dataset.id].t:el.dataset.s?'Bonus · '+subj(+el.dataset.s).code:'Bonus drills'})},
+  losCheck:el=>{const s=+el.dataset.s,r=+el.dataset.r,k=+el.dataset.k,n=+el.dataset.n,pn=pdfNote(s,r),l=pn&&pn.m.los[k-1];
+    const P=losCheckPool(s,r,l),pick=P.ap.slice(0,n);let b=shuffle(P.bonus);while(pick.length<n&&P.bonus.length){if(!b.length)b=shuffle(P.bonus);pick.push(QID[b.pop().id])}
+    const d=losDone(s,r);if(!d.includes(k)){S.meta.los[s+'-'+r]=[...d,k].sort((a,b)=>a-b);const nl=pn.m.los.length||1;if(S.meta.los[s+'-'+r].length>=nl&&!readSt(s,r))S.meta.read[s+'-'+r]={st:'read',ts:Date.now()};touch('meta')}
+    startQuiz(pick,{mode:'practice',label:`${subj(s).code} ${l&&l.c?secLabel(r,l):'R'+r} · check`,keys:[s+'-'+r],back:el.dataset.back||`#note-${s}-${r}-${k}`})},
   quizLos:el=>{const s=+el.dataset.s,r=+el.dataset.r,qs=losQs(s,r,{c:el.dataset.c});startQuiz(shuffle(qs).slice(0,20),{mode:'practice',label:`${subj(s).code} LOS ${r}${el.dataset.c}`,keys:[s+'-'+r]})},
   aiVariant:async el=>{const q=QID[el.dataset.id],box=$('#aivar');if(!q||!box)return;const sample=await getSample();
     if(!sample){toast('The AI tutor is not available here.');return}
