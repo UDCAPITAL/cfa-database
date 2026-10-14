@@ -542,7 +542,6 @@ async function enterAs(user){
 }
 function hashParams(){const h=location.hash.slice(1);return h.includes('=')?Object.fromEntries(new URLSearchParams(h)):{}}
 async function startWeb(){
-  document.body.classList.add('no-tutor');
   if(!window.supabase||SUPA.url.startsWith('__')){$('#main').innerHTML='<div class="empty">The account server is not configured yet.</div>';return}
   const hp=hashParams();let recovering=hp.type==='recovery';
   SB=supabase.createClient(SUPA.url,SUPA.key,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
@@ -844,7 +843,7 @@ function rawHtml(m){
 function vNote(s,r){
   const c=subj(s);if(!c||!c.r[r-1])return vNotes();const n=noteOf(s,r),raw=(RAWNOTE[s]||{})[r],st=readSt(s,r),x=rStats(s,r);
   const prev=r>1?[s,r-1]:s>1?[s-1,subj(s-1).r.length]:null,next=r<c.r.length?[s,r+1]:s<CURR.length?[s+1,1]:null;
-  let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
+  let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
   <div class="note-layout"><article class="panel note">`;
   if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Import your personal AnalystPrep file in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
   if(n){h+=`<p class="lead">${esc(n.summary)}</p>`;(n.sections||[]).forEach(sec=>{h+=`<h2>${esc(sec.h)}</h2>${md(sec.body)}`})}
@@ -895,9 +894,30 @@ function vSettings(){
 }
 
 /* ---------- Claude tutor ---------- */
-const RULES="You are an expert CFA Level I (2027 curriculum) tutor helping a candidate revise. Answer in English, clearly and concisely. Give the formula, the intuition and a small numerical example when it helps. When given a multiple-choice question, explain why the correct answer is right, why each other option is wrong, and the underlying course concept. Formatting: short paragraphs, bullet lists starting with '- ', **bold** for key terms; no headings, no tables, no LaTeX (write formulas in plain text, e.g. ModDur = MacDur / (1 + y)).";
+const RULES=MODE==='web'?'(tutor session)':"You are an expert CFA Level I (2027 curriculum) tutor helping a candidate revise. Answer in English, clearly and concisely. Give the formula, the intuition and a small numerical example when it helps. When given a multiple-choice question, explain why the correct answer is right, why each other option is wrong, and the underlying course concept. Formatting: short paragraphs, bullet lists starting with '- ', **bold** for key terms; no headings, no tables, no LaTeX (write formulas in plain text, e.g. ModDur = MacDur / (1 + y)).";
 const CHAT={turns:[],ctx:null,ctxKind:null,ctxLabel:'',busy:false,ctl:null,sample:undefined};
-async function getSample(){if(CHAT.sample!==undefined)return CHAT.sample;try{CHAT.sample=window.claude&&window.claude.use?await claude.use('sample'):null}catch(e){CHAT.sample=null}return CHAT.sample}
+/* web mode: same call shape as claude.ai's sample(), served by the ai-tutor Edge Function (OpenRouter) */
+function webSample(){
+  const fn=async(turns,opt={})=>{
+    const{data}=await SB.auth.getSession();const tok=data&&data.session&&data.session.access_token;
+    if(!tok)throw{code:'session_expired'};
+    let r;try{r=await fetch(SUPA.url+'/functions/v1/ai-tutor',{method:'POST',signal:opt.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok,apikey:SUPA.key},body:JSON.stringify({messages:turns.slice(1)})})}
+    catch(e){throw{code:e&&e.name==='AbortError'?'cancelled':'upstream_error'}}
+    if(!r.ok){let j={};try{j=await r.json()}catch(e){}
+      throw{code:r.status===401?'session_expired':j.error==='daily_limit'?'daily_limit':j.error==='no_credits'?'no_credits':j.error==='not_configured'?'not_configured':'upstream_error',limit:j.limit}}
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='',text='',truncated=false;
+    try{for(;;){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
+      let i;while((i=buf.indexOf('
+'))>=0){const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+        if(!line.startsWith('data:'))continue;const d=line.slice(5).trim();if(d==='[DONE]')continue;
+        try{const j=JSON.parse(d);const c=j.choices&&j.choices[0];const piece=c&&c.delta&&c.delta.content||'';if(c&&c.finish_reason==='length')truncated=true;if(piece){text+=piece;opt.onText&&opt.onText({text,delta:piece})}}catch(e){}}}}
+    catch(e){throw{code:e&&e.name==='AbortError'?'cancelled':'upstream_error',text}}
+    if(!text.trim())throw{code:'empty_completion'};
+    return{text,truncated};
+  };
+  return fn;
+}
+async function getSample(){if(MODE==='web')return SB?webSample():null;if(CHAT.sample!==undefined)return CHAT.sample;try{CHAT.sample=window.claude&&window.claude.use?await claude.use('sample'):null}catch(e){CHAT.sample=null}return CHAT.sample}
 function openAsk(ctx,label,prefill,autoSend){
   $('#drawer').hidden=false;if(ctx!==undefined){CHAT.ctx=ctx;CHAT.ctxLabel=label||''}
   $('#dctx').hidden=!CHAT.ctx;$('#dctxt').textContent=CHAT.ctxLabel;renderChat();
@@ -916,7 +936,7 @@ function renderChat(){
   const box=$('#msgs');box.innerHTML=h;box.scrollTop=box.scrollHeight;
   const b=$('#asksend');b.textContent=CHAT.busy?'Stop':'Send';b.classList.toggle('primary',!CHAT.busy);
 }
-const ASK_ERR={not_granted:'This page is not allowed to use Claude. You can change that in the artifact’s Permissions menu.',sampling_disabled:'Claude is not available for this account.',rate_limited:'Too many requests or usage limit reached. Try again in a moment.',session_expired:'Your claude.ai session expired: sign in again and retry.',refused:'Claude declined this wording. Try rephrasing your question.',prompt_too_large:'Question too long: shorten it or clear the conversation.'};
+const ASK_ERR={daily_limit:'You reached today’s limit of questions to the tutor. It resets tomorrow.',no_credits:'The tutor is out of credits for now. Tell the site owner.',not_configured:'The tutor is not set up yet.',not_granted:'This page is not allowed to use Claude. You can change that in the artifact’s Permissions menu.',sampling_disabled:'Claude is not available for this account.',rate_limited:'Too many requests or usage limit reached. Try again in a moment.',session_expired:'Your claude.ai session expired: sign in again and retry.',refused:'Claude declined this wording. Try rephrasing your question.',prompt_too_large:'Question too long: shorten it or clear the conversation.'};
 async function sendAsk(){
   if(CHAT.busy){CHAT.ctl&&CHAT.ctl.abort();return}
   const inp=$('#askin');const text=inp.value.trim();if(!text)return;
@@ -975,7 +995,8 @@ const ACT={
   askCtxOff:()=>{CHAT.ctx=null;CHAT.ctxKind=null;$('#dctx').hidden=true;renderChat()},
   askSugg:el=>openAsk(undefined,undefined,el.textContent,true),
   askQ:el=>{const ch=el.dataset.ch===''?null:+el.dataset.ch;const c=qContext(el.dataset.id,ch);CHAT.turns=[];CHAT.ctxKind='q';openAsk(c.txt,c.label)},
-  askNote:el=>{const s=+el.dataset.s,r=+el.dataset.r,n=noteOf(s,r),c=subj(s);CHAT.turns=[];CHAT.ctxKind='note';openAsk(`CFA Level I reading: ${c.name}, R${r} "${c.r[r-1]}".${n?'\nSummary: '+n.summary+'\nFormulas: '+(n.formulas||[]).map(f=>f.name+': '+f.f).join('; '):''}`.slice(0,5000),`${c.code} R${r} · ${c.r[r-1]}`)},
+  askNote:el=>{const s=+el.dataset.s,r=+el.dataset.r,n=noteOf(s,r),c=subj(s);CHAT.turns=[];CHAT.ctxKind='note';openAsk(`CFA Level I reading: ${c.name}, R${r} "${c.r[r-1]}".${n?'\nStudy sheet summary: '+n.summary+'\nFormulas: '+(n.formulas||[]).map(f=>f.name+': '+f.f).join('; ')+'\nSheet content:\n'+(n.sections||[]).map(x=>x.h+': '+x.body).join('\n'):''}`.slice(0,9000),`${c.code} R${r} · ${c.r[r-1]}`)},
+  askSum:el=>{ACT.askNote(el);openAsk(undefined,undefined,'Summarise this reading for exam revision: the key ideas, the formulas to know and the classic exam traps.',true)},
   setRead:el=>{const k=el.dataset.k;if(el.dataset.v)S.meta.read[k]={st:el.dataset.v,ts:Date.now()};else delete S.meta.read[k];touch('meta');render()},
   quizKeys:el=>{const keys=el.dataset.keys.split(',');const f={status:el.dataset.status||'all',diff:[1,2,3],src:'all'};const p=pool(keys,f);startQuiz(pickBalanced(p,keys.length>1?20:Math.min(20,p.length),true),{mode:'practice',label:el.dataset.label||'Quiz',keys})},
   addSubject:el=>{const s=+el.dataset.s;subj(s).r.forEach((_,i)=>SEL.add(s+'-'+(i+1)));if(!UI.open.includes(s))UI.open.push(s);saveUI();go('builder')},
