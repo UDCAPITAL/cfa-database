@@ -355,8 +355,11 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .pdfdoc .pdfb{border-radius:0}
 .note.pdfnote{padding:0;background:none;border:0}
 .loslinks{display:flex;flex-direction:column;gap:2px}
-.loslinks a{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:.85rem;line-height:1.35}
+.loslinks a{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px;padding:6px 8px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:.85rem;line-height:1.35}
 .loslinks a:hover{background:var(--surface-2)}
+.loslinks a.on{background:var(--accent-soft)}
+.loshead{display:flex;flex-direction:column;gap:2px}
+.loshead b{font-size:1.1rem;line-height:1.35}
 .loslinks b{font:500 .78rem var(--f-mono);color:var(--accent)}
 .pdftbl td,.pdftbl th{font-size:.85rem}
 #pdfstat:empty{display:none}
@@ -406,7 +409,7 @@ let QB=[],QID={},QBY={},NOTE={},RAWNOTE={},PERSO=null,PDX=null;
 const noteOf=(s,r)=>(NOTE[s]||{})[r]||null;
 const losLetter=t=>{const m=/^\s*(?:LOS\s*)?\d*\s*\(?([a-z])\)?\s*:/i.exec(t||'');return m?m[1].toLowerCase():null};
 function rappelFor(q){
-  if(q.c)return q.c;
+  if(q.c)return q.c;if(q.pf)return'';
   const n=noteOf(q.s,q.r);if(!n||!n.los)return'';const L=losLetter(q.los);const x=L&&n.los.find(l=>l.code===L);
   return x?`LOS ${q.r}${L} · ${x.title}\n${x.rappel}`:'';
 }
@@ -454,7 +457,7 @@ async function pageLines(page,p){
   for(const o of it){const l=L[L.length-1];if(l&&Math.abs(o.top-l.top)<3){l.items.push(o);l.bot=Math.max(l.bot,o.bot)}else L.push({top:o.top,bot:o.bot,items:[o]})}
   return L.map(l=>{l.items.sort((a,b)=>a.x-b.x);let t='',end=-1e9;
     for(const o of l.items){if(t&&!/\s$/.test(t)&&!/^\s/.test(o.s)&&o.x-end>o.sz*.15)t+=' ';t+=o.s;end=o.x+o.w}
-    return{p,top:l.top,bot:l.bot,x:l.items[0].x,t:t.replace(/\s+/g,' ').trim()}});
+    return{p,top:l.top,bot:l.bot,x:l.items[0].x,sz:Math.max(...l.items.map(o=>o.sz)),t:t.replace(/\s+/g,' ').trim()}});
 }
 async function scanPdf(file,onP){
   const lib=await pdfjs();const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
@@ -501,7 +504,12 @@ function parseNotes(L,meta){
   st.forEach((m,k)=>{
     const a=L[m.i],nx=st[k+1]?L[st[k+1].i]:null;let p1=nx?nx.p:meta.np,y1=nx?nx.top-8:meta.h-64;
     if(y1<36+24){p1--;y1=meta.h-64}
-    const los=[];for(let i=m.i+1;i<(nx?st[k+1].i:L.length);i++){const x=/^LOS\s*\d+\s*\(?([a-z])\)?\s*[:.]\s*(.*)/.exec(L[i].t);if(x)los.push({c:x[1],t:x[2],p:L[i].p,y:L[i].top})}
+    const end=nx?st[k+1].i:L.length,head=i=>L[i].sz>=11&&L[i].x<70;let los=[];
+    for(let i=m.i+1;i<end;i++){if(!head(i)||!/^LOS(?![A-Za-z])/.test(L[i].t))continue;
+      const x=/^LOS\s*\d*\s*\(?([a-z])\)?\s*[:.]\s*(.*)/.exec(L[i].t);
+      if(x)los.push({c:x[1],t:x[2],p:L[i].p,y:L[i].top});
+      else if(/^LOS\s*\d*$/.test(L[i].t)){const c=los.length?String.fromCharCode(los[los.length-1].c.charCodeAt(0)+1):'a';los.push({c,t:(L[i+1]&&L[i+1].t||'').replace(/^\d*\s*\(?[a-z]\)?\s*:\s*/,''),p:L[i].p,y:L[i].top})}}
+    if(los.length<2){const sd=[];for(let i=m.i+1;i<end;i++){const x=head(i)&&/^Standard ([IVX]+(?:\([A-Z]\))?)\s*[^A-Za-z0-9\s(]\s*(.*)/.exec(L[i].t);if(x)sd.push({c:x[1],t:x[2],p:L[i].p,y:L[i].top,std:1})}if(sd.length>1)los=sd}
     mods[m.r]={p0:a.p,y0:a.top-8,p1,y1,title:m.title,los};
   });
   return{kind:'notes',s,meta,mods};
@@ -567,6 +575,13 @@ function hydratePdf(){
   cs.forEach(c=>{c.dataset.obs='1';const hit=BANDS.get(segKey(c,segScale(c)));if(hit)blit(c,hit);PDFIO.observe(c)});
 }
 const isPdfQ=q=>!!(q&&q.pf&&PDX&&PDX.files[q.pf]);
+function secRegion(f,m,k){
+  const L=m.los,h=PDX.files[f].h;if(!L.length)return m;
+  const a=k?{p:L[k].p,y:L[k].y-8}:{p:m.p0,y:m.y0},b=k+1<L.length?{p:L[k+1].p,y:L[k+1].y-8}:{p:m.p1,y:m.y1};
+  if(b.y<36+24&&b.p>a.p){b.p--;b.y=h-64}
+  return{p0:a.p,y0:a.y,p1:b.p,y1:b.y};
+}
+const secLabel=(r,l)=>l.std?'Standard '+l.c:'LOS '+r+l.c;
 const pdfNote=(s,r)=>{const f=PDX&&PDX.subj[s]&&PDX.subj[s].notes;const m=f&&PDX.notes[f]&&PDX.notes[f][r];return m?{f,m}:null};
 const stemHtml=q=>isPdfQ(q)?`<div class="stem pdfq">${pdfBand(q.pf,q.pq.st)}</div>`:`<div class="stem">${esc(q.q)}</div>`;
 const optBody=(q,k)=>isPdfQ(q)?pdfBand(q.pf,q.pq.op[k],q.pq.op[k].x0):`<span>${esc(q.o[k])}</span>`;
@@ -852,7 +867,7 @@ function render(){
 function viewFor(r){
   if(r.startsWith('subject-'))return vSubject(+r.split('-')[1]);
   if(r.startsWith('session-'))return vSession(r.slice(8));
-  if(r.startsWith('note-')){const[,s,rr]=r.split('-');return vNote(+s,+rr)}
+  if(r.startsWith('note-')){const[,s,rr,k]=r.split('-');return vNote(+s,+rr,+(k||1))}
   return({notes:vNotes,dashboard:vDash,subjects:vSubjects,builder:vBuilder,review:vReview,history:vHistory,settings:vSettings}[r]||vDash)();
 }
 function vResume(){const done=Q.items.filter(i=>i.done||i.ch!=null).length;return`<div class="countdown" style="margin-bottom:18px"><span>Quiz in progress: <b>${esc(Q.label)}</b> · ${done}/${Q.items.length}</span><a class="btn primary sm" href="#quiz">Resume</a><button class="btn ghost sm" data-act="abandon">Discard</button></div>`}
@@ -1000,13 +1015,17 @@ function vNotes(){
 function rawHtml(m){
   return m.sections.map(sec=>`<details><summary>${esc(sec.h)}</summary>${sec.b.map(b=>b.t==='h'?`<h4>${esc(b.x)}</h4>`:b.t==='f'?`<div class="rf">${esc(b.x)}</div>`:b.t==='li'?`<p>• ${esc(b.x)}</p>`:`<p>${esc(b.x)}</p>`).join('')}</details>`).join('');
 }
-function vNote(s,r){
+function vNote(s,r,k){
   const c=subj(s);if(!c||!c.r[r-1])return vNotes();const n=noteOf(s,r),raw=(RAWNOTE[s]||{})[r],st=readSt(s,r),x=rStats(s,r);
   const prev=r>1?[s,r-1]:s>1?[s-1,subj(s-1).r.length]:null,next=r<c.r.length?[s,r+1]:s<CURR.length?[s+1,1]:null;
   let h=`<header class="page-head"><div style="min-width:0"><p class="eyebrow"><a href="#notes">Study notes</a> · ${esc(c.name)} · R${r}</p><h1>${esc(c.r[r-1])}</h1></div><div class="row"><button class="btn" data-act="askSum" data-s="${s}" data-r="${r}">✦ Summarise</button><button class="btn" data-act="askNote" data-s="${s}" data-r="${r}">Ask Claude</button><button class="btn primary" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading (${x.total})</button></div></header>
   `;
   const pn=pdfNote(s,r);
-  if(pn)h+=`<div class="note-layout"><article class="note pdfnote"><div class="pdfdoc" id="pdfdoc">${pdfBand(pn.f,pn.m)}</div>`;
+  const L=pn?pn.m.los:[];k=Math.min(Math.max(1,k||1),Math.max(1,L.length));
+  if(pn){const lk=L[k-1],pv=k>1?`#note-${s}-${r}-${k-1}`:prev?`#note-${prev[0]}-${prev[1]}`:'',nx=k<L.length?`#note-${s}-${r}-${k+1}`:next?`#note-${next[0]}-${next[1]}`:'';
+    const pvl=k>1?secLabel(r,L[k-2]):prev?subj(prev[0]).code+' R'+prev[1]:'',nxl=k<L.length?secLabel(r,L[k]):next?subj(next[0]).code+' R'+next[1]:'';
+    h+=`<div class="note-layout"><article class="note pdfnote stack" style="gap:14px">${lk?`<div class="loshead"><span class="mono small muted">${secLabel(r,lk)} · ${k}/${L.length}</span></div>`:''}<div class="pdfdoc" id="pdfdoc">${pdfBand(pn.f,secRegion(pn.f,pn.m,k-1))}</div>
+     <div class="row" style="justify-content:space-between">${pv?`<a class="btn" href="${pv}">← ${esc(pvl)}</a>`:'<span></span>'}${nx?`<a class="btn primary" href="${nx}">${esc(nxl)} →</a>`:''}</div>`}
   else{
     h+=`<div class="note-layout"><article class="panel note">`;
     if(!n&&!raw)h+=`<div class="empty">No notes for this reading in this browser yet. Add your AnalystPrep PDFs in <a href="#settings">Settings</a>, or ask Claude about the reading.</div>`;
@@ -1014,11 +1033,12 @@ function vNote(s,r){
     if(raw)h+=`<h2>${n?'Full AnalystPrep notes':'AnalystPrep notes'}</h2><p class="small muted">Text extracted from your PDF. Charts are missing and some formulas are garbled — the formula box on the right has clean versions.</p><div class="raw">${rawHtml(raw)}</div>`;
   }
   h+=`</article><aside class="side note-side"><section class="panel stack" style="gap:10px"><p class="eyebrow">My progress</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([k,l])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${k}" class="${st===k?'on':''}">${l}</button>`).join('')}</div><span class="small muted">${(S.meta.read[s+'-'+r]||{}).ts?'Updated '+fmtD(S.meta.read[s+'-'+r].ts)+' · ':''}Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>`;
-  if(pn&&pn.m.los.length)h+=`<section class="panel stack" style="gap:8px"><h3>In this reading</h3><div class="loslinks">${pn.m.los.map(l=>`<a href="#" data-act="pdfJump" data-p="${l.p}" data-y="${l.y}"><b>${r}${esc(l.c)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>`;
+  if(L.length)h+=`<section class="panel stack" style="gap:8px"><h3>In this reading</h3><div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''}"><b>${l.std?esc(l.c):r+esc(l.c)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>`;
+  if(!pn){
   if(n&&n.formulas&&n.formulas.length)h+=`<section class="panel stack" style="gap:10px"><h3>Key formulas</h3>${n.formulas.map(f=>`<div class="formula"><span class="small muted">${esc(f.name)}</span><code>${esc(f.f)}</code>${f.note?`<span class="small">${esc(f.note)}</span>`:''}</div>`).join('')}</section>`;
   if(n&&n.los&&n.los.length)h+=`<section class="panel stack" style="gap:10px"><h3>LOS reminders</h3><div class="loslist small">${n.los.map(l=>`<div><b>${r}${esc(l.code)}</b>${esc(l.title)}<br><span class="muted">${esc(l.rappel)}</span></div>`).join('')}</div></section>`;
-  if(n&&n.pitfalls&&n.pitfalls.length)h+=`<section class="panel stack" style="gap:8px"><h3>Exam traps</h3><ul class="pit">${n.pitfalls.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`;
-  h+=`<div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div>`;
+  if(n&&n.pitfalls&&n.pitfalls.length)h+=`<section class="panel stack" style="gap:8px"><h3>Exam traps</h3><ul class="pit">${n.pitfalls.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`;}
+  if(!pn)h+=`<div class="row" style="justify-content:space-between">${prev?`<a class="btn sm" href="#note-${prev[0]}-${prev[1]}">← ${subj(prev[0]).code} R${prev[1]}</a>`:'<span></span>'}${next?`<a class="btn sm" href="#note-${next[0]}-${next[1]}">${subj(next[0]).code} R${next[1]} →</a>`:''}</div></aside></div>`;
   return h;
 }
 
