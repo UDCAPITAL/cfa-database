@@ -335,6 +335,40 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 @media (max-width:820px){.who{margin:0;flex-direction:row;align-items:center;padding:0;border:0}.who span{display:none}}
 .srcchip{font:500 .7rem var(--f-mono);padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
 .srcchip.ap{background:var(--accent-soft);color:var(--accent)}
+.player{max-width:1000px}
+.srcchip.bonus{background:color-mix(in srgb,var(--gold) 22%,transparent);color:var(--gold-ink)}
+.stem.rich,.stem.bxq{white-space:normal;max-width:none}
+.stem.bxq{font-size:1.05rem;line-height:1.65}
+.qx.nbdoc{font-size:1rem;line-height:1.6;max-width:none}
+.qx.nbdoc p{margin:0 0 .6em}.qx.nbdoc p:last-child{margin-bottom:0}
+.qx.nbdoc figure{margin:.6em auto}
+.qx.qop p,.qx.qop ol,.qx.qop ul{margin:0}.qx.qop ol,.qx.qop ul{padding:0;list-style:none}.qx.qop .mk{display:none}
+.qx.qop figure{margin:.2em 0}
+.otx{min-width:0}
+.qx .qref{font-size:.82rem;color:var(--ink-3);border-top:1px dashed var(--line);padding-top:8px;margin-top:10px}
+.qx .qref b{font-weight:500;color:var(--ink-3)}
+.expl .qx,.bxe{margin-top:6px}
+.bxe .bxs{padding:6px 0 6px 12px;border-left:2px solid color-mix(in srgb,var(--gold) 55%,transparent);margin:4px 0;font-family:var(--f-mono);font-size:.86rem;line-height:1.55;white-space:normal}
+.bxe .bxs b{color:var(--ink)}
+.aivar{border:1px dashed color-mix(in srgb,var(--gold) 60%,var(--line));border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.aivar .eyebrow{color:var(--gold-ink);margin:0}
+.tplan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tcard{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.tcard>b{font:600 1.7rem var(--f-mono);color:var(--ink)}.tcard>b small{font-size:.9rem;color:var(--ink-3)}
+.tcard>b.tl{font:600 1rem var(--f-display)}
+.tcard>span{font-size:.84rem;color:var(--ink-2);flex:1}
+.tcard .btn{align-self:flex-start;margin-top:4px}
+@media (max-width:1100px){.tplan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.tplan{grid-template-columns:1fr}}
+.blist{display:flex;flex-direction:column}
+.brow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.brow:first-child{border-top:0}
+.bt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.bt code{font:.8rem var(--f-mono);color:var(--gold-ink);white-space:normal}
+.bs{display:flex;gap:8px;align-items:center}
+@media (max-width:640px){.brow{grid-template-columns:1fr}.bs{order:3}}
+.lacc{display:block;font:500 .72rem var(--f-mono);font-style:normal;margin-top:2px}
+.lacc.ok{color:var(--ok)}.lacc.mid{color:var(--gold-ink)}.lacc.ko{color:var(--ko)}
 .banner{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px;border-radius:12px;background:var(--accent-soft);color:var(--ink)}
 .banner p{margin:0;max-width:70ch}
 .raw h4{margin:18px 0 6px;font-size:.95rem}
@@ -517,6 +551,442 @@ const NOTES_RAW=[];
 const MPS=0.70; // indicative pass mark
 const AP_BASE='https://app.analystprep.com/cfa1/2027/question-bank/chapter/';
 const subj=id=>CURR[id-1];
+/* ---------- Bonus: original practice questions, rebuilt with new numbers, names and wording at every draw ---------- */
+const BONUS=[],BONUS_BY={};
+function bx(id,s,r,t,f,fn){const T={id:'bx.'+id,s,r,t,f,fn};BONUS.push(T);BONUS_BY[T.id]=T}
+function rngOf(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const BX_NAMES=['Amara','Lucas','Mei','Omar','Sofia','Kenji','Ines','Daniel','Priya','Mateo','Chloe','Ravi','Leila','Tomás','Hana','Felix','Zara','Noah','Elena','Yusuf'];
+const BX_FIRMS=['Northwind','Bluepeak','Corvane','Halden','Marisol','Tessaro','Quillon','Veridia','Ostrava','Lumen','Arkwell','Silvane','Pembrook','Valtor','Ardent'];
+const BX_CUR=['USD','EUR','GBP','CHF','CAD'];
+function bxHelpers(R){
+  const H={
+    R,ri:(a,b)=>a+Math.floor(R()*(b-a+1)),
+    rf:(a,b,st)=>{const n=Math.round((b-a)/st);return+(a+Math.floor(R()*(n+1))*st).toFixed(6)},
+    pick:a=>a[Math.floor(R()*a.length)],
+    sh:a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a},
+    chance:p=>R()<p,
+    name:()=>H.pick(BX_NAMES),firm:()=>H.pick(BX_FIRMS),cur:()=>H.pick(BX_CUR),
+    m:(x,c,d=2)=>(c?c+' ':'')+Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}),
+    p:(x,d=2)=>(x*100).toFixed(d)+'%',
+    n:(x,d=2)=>Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}),
+    say:(...v)=>H.pick(v)
+  };return H;
+}
+const bxStep=(...lines)=>lines.map(l=>`<div class="bxs">${l}</div>`).join('');
+function bonusInst(id){
+  const[base,sd]=String(id).split('~'),T=BONUS_BY[base];if(!T||!sd)return undefined;
+  const H=bxHelpers(rngOf(parseInt(sd,36)||1));let out=null;
+  for(let i=0;i<8;i++){const o=T.fn(H);const all=[o.c,...o.w];if(new Set(all).size===3){out=o;break}out=o}
+  const ord=H.sh([0,1,2]),opts=[out.c,...out.w];
+  return{id,tpl:base,s:T.s,r:T.r,src:'bonus',d:0,h:1,t:'Bonus · '+T.t,q:out.q,o:ord.map(i=>opts[i]),a:ord.indexOf(0),e:out.e,los:''};
+}
+function newBonus(base){const id=base+'~'+Math.floor(Math.random()*2e9).toString(36);const q=bonusInst(id);if(q)QID[id]=q;return q}
+
+/* ===== Quantitative Methods ===== */
+bx('qm-hpr',1,1,'Holding period return','HPR = (P₁ − P₀ + D₁) / P₀',H=>{
+  const c=H.cur(),P0=H.rf(20,150,0.5),P1=+(P0*(1+H.rf(-0.15,0.3,0.005))).toFixed(2),D=+(P0*H.rf(0.008,0.05,0.001)).toFixed(2),nm=H.name();
+  const r=(P1-P0+D)/P0;
+  return{q:H.say(`${nm} buys a share for ${H.m(P0,c)}, receives a dividend of ${H.m(D,c)} during the year and sells the share at year-end for ${H.m(P1,c)}. The holding period return is <i>closest to</i>:`,
+    `A stock bought at ${H.m(P0,c)} pays a ${H.m(D,c)} dividend and is sold one year later at ${H.m(P1,c)}. What is the investor's holding period return?`),
+    c:H.p(r),w:[H.p((P1-P0)/P0),H.p((P1-P0+D)/P1)],
+    e:bxStep(`HPR = (P₁ − P₀ + D₁) / P₀ = (${P1} − ${P0} + ${D}) / ${P0} = <b>${H.p(r)}</b>`,`Trap: ${H.p((P1-P0)/P0)} is the price return only (dividend ignored); dividing by P₁ uses the wrong base.`)}});
+bx('qm-geo',1,1,'Geometric mean return','R_G = [(1+R₁)(1+R₂)…(1+Rₙ)]^(1/n) − 1',H=>{
+  const n=H.ri(3,5),rs=Array.from({length:n},()=>H.rf(-0.25,0.35,0.01));const prod=rs.reduce((a,x)=>a*(1+x),1);
+  const g=Math.pow(prod,1/n)-1,am=rs.reduce((a,x)=>a+x,0)/n;
+  return{q:`A fund earned the following annual returns: ${rs.map(x=>H.p(x,0)).join(', ')}. Its geometric mean annual return is <i>closest to</i>:`,
+    c:H.p(g),w:[H.p(am),H.p(prod-1)],
+    e:bxStep(`Product of growth factors = ${rs.map(x=>'('+(1+x).toFixed(2)+')').join('×')} = ${prod.toFixed(4)}`,`R_G = ${prod.toFixed(4)}^(1/${n}) − 1 = <b>${H.p(g)}</b>`,`The arithmetic mean (${H.p(am)}) is always ≥ the geometric mean; ${H.p(prod-1)} is the cumulative, not annual, return.`)}});
+bx('qm-twr',1,2,'Time-weighted return','TWR = (1+r₁)(1+r₂)… − 1, sub-periods split at each external cash flow',H=>{
+  const c=H.cur(),V0=H.ri(80,400)*1000,r1=H.rf(-0.1,0.2,0.005),V1=Math.round(V0*(1+r1)),C=H.ri(10,120)*1000,r2=H.rf(-0.1,0.2,0.005),V2=Math.round((V1+C)*(1+r2));
+  const R1=V1/V0-1,R2=V2/(V1+C)-1,twr=(1+R1)*(1+R2)-1;
+  return{q:`A portfolio is worth ${H.m(V0,c,0)} on 1 January and ${H.m(V1,c,0)} on 30 June, just before the client adds ${H.m(C,c,0)}. On 31 December it is worth ${H.m(V2,c,0)}. The time-weighted return for the year is <i>closest to</i>:`,
+    c:H.p(twr),w:[H.p((V2-V0-C)/V0),H.p((R1+R2)/2)],
+    e:bxStep(`H1: ${V1}/${V0} − 1 = ${H.p(R1)}`,`H2: ${V2}/(${V1}+${C}) − 1 = ${H.p(R2)}`,`TWR = (1 + ${H.p(R1)})(1 + ${H.p(R2)}) − 1 = <b>${H.p(twr)}</b>`,`TWR removes the effect of the client's cash flow; it links sub-period returns geometrically.`)}});
+bx('qm-ann',1,2,'Annualizing a return','R_annual = (1 + R_period)^(365/days) − 1',H=>{
+  const d=H.pick([30,45,60,90,120,150,200,250]),r=H.rf(0.005,0.06,0.001),a=Math.pow(1+r,365/d)-1;
+  return{q:H.say(`An investment earned ${H.p(r,1)} over ${d} days. Assuming a 365-day year and compounding, its annualized return is <i>closest to</i>:`,`What is the annualized equivalent of a ${H.p(r,1)} return earned over ${d} days (365-day year, compounded)?`),
+    c:H.p(a),w:[H.p(r*365/d),H.p(Math.pow(1+r,d/365)-1,3)],
+    e:bxStep(`(1 + ${r.toFixed(3)})^(365/${d}) − 1 = <b>${H.p(a)}</b>`,`${H.p(r*365/d)} is simple (non-compounded) scaling.`)}});
+bx('qm-ccr',1,2,'Continuously compounded return','r_cc = ln(P₁/P₀) = ln(1 + HPR)',H=>{
+  const P0=H.rf(10,200,0.25),P1=+(P0*(1+H.rf(-0.2,0.4,0.005))).toFixed(2),r=Math.log(P1/P0);
+  return{q:`A share price moves from ${H.n(P0)} to ${H.n(P1)} over one year. The continuously compounded return is <i>closest to</i>:`,
+    c:H.p(r),w:[H.p(P1/P0-1),H.p(Math.log10(P1/P0))],
+    e:bxStep(`r_cc = ln(${P1}/${P0}) = ln(${(P1/P0).toFixed(4)}) = <b>${H.p(r)}</b>`,`${H.p(P1/P0-1)} is the discrete holding period return.`)}});
+bx('qm-real',1,2,'Real return','(1 + nominal) = (1 + real)(1 + inflation)',H=>{
+  const n=H.rf(0.02,0.14,0.001),i=H.rf(0.005,0.08,0.001),r=(1+n)/(1+i)-1;
+  return{q:`A bond fund returned ${H.p(n,1)} last year while inflation was ${H.p(i,1)}. The real return is <i>closest to</i>:`,
+    c:H.p(r),w:[H.p(n-i),H.p((1+n)*(1+i)-1)],
+    e:bxStep(`Real = (1 + ${H.p(n,1)}) / (1 + ${H.p(i,1)}) − 1 = <b>${H.p(r)}</b>`,`n − i = ${H.p(n-i)} is only the approximation.`)}});
+bx('qm-fv',1,4,'Future value with periodic compounding','FV = PV (1 + r/m)^(m·n)',H=>{
+  const c=H.cur(),PV=H.ri(5,200)*500,r=H.rf(0.02,0.1,0.0025),n=H.ri(2,15),m=H.pick([2,4,12]),lab={2:'semiannually',4:'quarterly',12:'monthly'}[m];
+  const fv=PV*Math.pow(1+r/m,m*n);
+  return{q:`${H.name()} deposits ${H.m(PV,c,0)} for ${n} years at a stated annual rate of ${H.p(r)} compounded ${lab}. The future value is <i>closest to</i>:`,
+    c:H.m(fv,c),w:[H.m(PV*Math.pow(1+r,n),c),H.m(PV*(1+r*n),c)],
+    e:bxStep(`FV = ${PV} × (1 + ${r}/${m})^(${m}×${n}) = <b>${H.m(fv,c)}</b>`,`Annual compounding gives ${H.m(PV*Math.pow(1+r,n),c)}; simple interest gives ${H.m(PV*(1+r*n),c)}.`)}});
+bx('qm-pva',1,4,'Present value of an annuity','PV = A × [1 − (1 + r)^(−n)] / r',H=>{
+  const c=H.cur(),A=H.ri(5,80)*250,r=H.rf(0.02,0.1,0.0025),n=H.ri(4,25),due=H.chance(.35);
+  const pv=A*(1-Math.pow(1+r,-n))/r,pvd=pv*(1+r);
+  return{q:`What is the present value of ${n} annual payments of ${H.m(A,c,0)}${due?', the first one received <b>today</b>,':', the first one received one year from now,'} discounted at ${H.p(r)}?`,
+    c:H.m(due?pvd:pv,c),w:[H.m(due?pv:pvd,c),H.m(A*n/Math.pow(1+r,n),c)],
+    e:bxStep(`Ordinary annuity: ${A} × [1 − (1+${r})^−${n}] / ${r} = ${H.m(pv,c)}`,due?`Annuity due (first payment today): × (1 + r) = <b>${H.m(pvd,c)}</b>`:`Payments start in one year, so this is an ordinary annuity: <b>${H.m(pv,c)}</b>`)}});
+bx('qm-ear',1,4,'Effective annual rate','EAR = (1 + r/m)^m − 1 ; continuous: e^r − 1',H=>{
+  const r=H.rf(0.03,0.16,0.0025),m=H.pick([2,4,12,365]),lab={2:'semiannual',4:'quarterly',12:'monthly',365:'daily'}[m],ear=Math.pow(1+r/m,m)-1;
+  return{q:`A lender quotes a stated annual rate of ${H.p(r)} with ${lab} compounding. The effective annual rate is <i>closest to</i>:`,
+    c:H.p(ear,3),w:[H.p(r,3),H.p(Math.pow(1+r/m,m/2)-1,3)],
+    e:bxStep(`EAR = (1 + ${r}/${m})^${m} − 1 = <b>${H.p(ear,3)}</b>`)}});
+bx('qm-perp',1,4,'Growing perpetuity','PV = C₁ / (r − g), with C₁ = C₀(1 + g)',H=>{
+  const c=H.cur(),C0=H.rf(1,20,0.25),g=H.rf(0.01,0.05,0.0025),r=+(g+H.rf(0.03,0.08,0.0025)).toFixed(4),C1=C0*(1+g);
+  return{q:`A payment of ${H.m(C0,c)} has just been made and will grow at ${H.p(g)} forever. With a discount rate of ${H.p(r)}, the present value of the future payments is <i>closest to</i>:`,
+    c:H.m(C1/(r-g),c),w:[H.m(C0/(r-g),c),H.m(C1/r,c)],
+    e:bxStep(`C₁ = ${C0} × (1 + ${g}) = ${C1.toFixed(4)}`,`PV = ${C1.toFixed(4)} / (${r} − ${g}) = <b>${H.m(C1/(r-g),c)}</b>`,`Trap: using C₀ instead of the next payment C₁.`)}});
+bx('qm-sd',1,5,'Sample standard deviation','s = √[Σ(Xᵢ − X̄)² / (n − 1)]',H=>{
+  const xs=Array.from({length:5},()=>H.ri(-12,25)),mu=xs.reduce((a,x)=>a+x,0)/5,ss=xs.reduce((a,x)=>a+(x-mu)**2,0);
+  const s=Math.sqrt(ss/4),sp=Math.sqrt(ss/5),mad=xs.reduce((a,x)=>a+Math.abs(x-mu),0)/5;
+  return{q:`The annual returns (%) of a strategy are ${xs.join(', ')}. The <b>sample</b> standard deviation is <i>closest to</i>:`,
+    c:H.n(s)+'%',w:[H.n(sp)+'%',H.n(mad)+'%'],
+    e:bxStep(`Mean = ${H.n(mu)}%; Σ(X − X̄)² = ${H.n(ss)}`,`s = √(${H.n(ss)} / 4) = <b>${H.n(s)}%</b>`,`Dividing by n gives the population figure (${H.n(sp)}%); ${H.n(mad)}% is the mean absolute deviation.`)}});
+bx('qm-cv',1,5,'Coefficient of variation','CV = s / X̄ (risk per unit of return)',H=>{
+  let A;for(let i=0;i<30;i++){A=['A','B','C'].map(k=>({k,m:H.rf(0.04,0.16,0.005),s:H.rf(0.06,0.3,0.005)}));A.forEach(a=>a.cv=a.s/a.m);const best=A.reduce((x,y)=>y.cv<x.cv?y:x),lowS=A.reduce((x,y)=>y.s<x.s?y:x),hiM=A.reduce((x,y)=>y.m>x.m?y:x);if(best!==lowS&&best!==hiM)break}
+  const best=A.reduce((x,y)=>y.cv<x.cv?y:x);
+  return{q:`Which fund has the lowest risk per unit of mean return?<br>${A.map(a=>`Fund ${a.k}: mean ${H.p(a.m,1)}, standard deviation ${H.p(a.s,1)}`).join('<br>')}`,
+    c:'Fund '+best.k,w:A.filter(a=>a!==best).map(a=>'Fund '+a.k),
+    e:bxStep(...A.map(a=>`CV(${a.k}) = ${H.p(a.s,1)} / ${H.p(a.m,1)} = ${a.cv.toFixed(2)}`),`Lowest CV → <b>Fund ${best.k}</b>. Neither the lowest volatility nor the highest return alone answers the question.`)}});
+bx('qm-ci',1,6,'Normal distribution: confidence interval','90%: ±1.645σ · 95%: ±1.96σ · 99%: ±2.58σ',H=>{
+  const mu=H.rf(0.03,0.12,0.005),sd=H.rf(0.08,0.25,0.005),ZS=[[90,1.645],[95,1.96],[99,2.58]],lv=H.pick(ZS),oth=ZS.filter(x=>x!==lv);
+  const iv=z=>`${H.p(mu-z*sd,1)} to ${H.p(mu+z*sd,1)}`;
+  return{q:`Annual returns are normally distributed with a mean of ${H.p(mu,1)} and a standard deviation of ${H.p(sd,1)}. The ${lv[0]}% confidence interval for next year's return is <i>closest to</i>:`,
+    c:iv(lv[1]),w:oth.map(x=>iv(x[1])),
+    e:bxStep(`${lv[0]}% two-sided → z = ${lv[1]}`,`${H.p(mu,1)} ± ${lv[1]} × ${H.p(sd,1)} = <b>${iv(lv[1])}</b>`)}});
+bx('qm-sfr',1,6,"Roy's safety-first ratio",'SFRatio = [E(R_P) − R_L] / σ_P ; choose the highest',H=>{
+  const RL=H.rf(0.01,0.05,0.005);let P;for(let i=0;i<40;i++){P=['1','2','3'].map(k=>({k,m:H.rf(0.05,0.15,0.005),s:H.rf(0.06,0.25,0.005)}));P.forEach(x=>x.r=(x.m-RL)/x.s);const b=P.reduce((x,y)=>y.r>x.r?y:x),hm=P.reduce((x,y)=>y.m>x.m?y:x),ls=P.reduce((x,y)=>y.s<x.s?y:x);if(b!==hm&&b!==ls)break}
+  const b=P.reduce((x,y)=>y.r>x.r?y:x);
+  return{q:`${H.name()} wants to minimise the probability of earning less than ${H.p(RL,1)}. Using Roy's safety-first criterion, which portfolio is preferred?<br>${P.map(x=>`Portfolio ${x.k}: expected return ${H.p(x.m,1)}, standard deviation ${H.p(x.s,1)}`).join('<br>')}`,
+    c:'Portfolio '+b.k,w:P.filter(x=>x!==b).map(x=>'Portfolio '+x.k),
+    e:bxStep(...P.map(x=>`SFR(${x.k}) = (${H.p(x.m,1)} − ${H.p(RL,1)}) / ${H.p(x.s,1)} = ${x.r.toFixed(3)}`),`Highest ratio → <b>Portfolio ${b.k}</b>.`)}});
+bx('qm-t',1,7,'t-statistic for a mean','t = (X̄ − μ₀) / (s / √n)',H=>{
+  const n=H.pick([16,25,36,49,64,81,100]),mu0=H.rf(0,0.08,0.005),xb=+(mu0+H.rf(-0.04,0.05,0.001)).toFixed(4),s=H.rf(0.05,0.25,0.005);
+  const t=(xb-mu0)/(s/Math.sqrt(n));
+  return{q:`A sample of ${n} monthly observations has a mean of ${H.p(xb,2)} and a standard deviation of ${H.p(s,1)}. The t-statistic for testing H₀: μ = ${H.p(mu0,1)} is <i>closest to</i>:`,
+    c:t.toFixed(2),w:[((xb-mu0)/s).toFixed(2),((xb-mu0)/(s/n)).toFixed(2)],
+    e:bxStep(`Standard error = ${s} / √${n} = ${(s/Math.sqrt(n)).toFixed(4)}`,`t = (${xb} − ${mu0}) / ${(s/Math.sqrt(n)).toFixed(4)} = <b>${t.toFixed(2)}</b>`)}});
+bx('qm-port',1,8,'Two-asset portfolio risk','σ_P = √(w₁²σ₁² + w₂²σ₂² + 2w₁w₂ρσ₁σ₂)',H=>{
+  const w1=H.rf(0.2,0.8,0.05),w2=1-w1,s1=H.rf(0.08,0.3,0.01),s2=H.rf(0.05,0.25,0.01),rho=H.rf(-0.5,0.8,0.05);
+  const v=w1*w1*s1*s1+w2*w2*s2*s2+2*w1*w2*rho*s1*s2,sp=Math.sqrt(v);
+  return{q:`A portfolio holds ${H.p(w1,0)} in asset 1 (σ = ${H.p(s1,0)}) and ${H.p(w2,0)} in asset 2 (σ = ${H.p(s2,0)}). The correlation is ${rho.toFixed(2)}. The portfolio standard deviation is <i>closest to</i>:`,
+    c:H.p(sp),w:[H.p(w1*s1+w2*s2),H.p(Math.sqrt(w1*w1*s1*s1+w2*w2*s2*s2))],
+    e:bxStep(`σ²_P = ${w1.toFixed(2)}²×${s1}² + ${w2.toFixed(2)}²×${s2}² + 2×${w1.toFixed(2)}×${w2.toFixed(2)}×${rho}×${s1}×${s2} = ${v.toFixed(5)}`,`σ_P = <b>${H.p(sp)}</b>`,`The weighted average of σ (${H.p(w1*s1+w2*s2)}) only applies when ρ = 1.`)}});
+bx('qm-reg',1,10,'Simple linear regression: prediction','Ŷ = b̂₀ + b̂₁X',H=>{
+  const b0=H.rf(-0.02,0.03,0.001),b1=H.rf(0.4,1.6,0.01),X=H.rf(-0.05,0.12,0.005),y=b0+b1*X;
+  return{q:`A regression of a stock's monthly return on the market's monthly return gives an intercept of ${b0.toFixed(3)} and a slope of ${b1.toFixed(2)}. If the market returns ${H.p(X,1)} next month, the predicted stock return is <i>closest to</i>:`,
+    c:H.p(y),w:[H.p(b1*X),H.p(b0+b1)],
+    e:bxStep(`Ŷ = ${b0.toFixed(3)} + ${b1.toFixed(2)} × ${X.toFixed(3)} = <b>${H.p(y)}</b>`)}});
+
+/* ===== Economics ===== */
+bx('eco-elast',2,1,'Own-price elasticity of demand','E = %ΔQ / %ΔP ; |E| > 1 elastic, < 1 inelastic',H=>{
+  const dp=H.rf(0.04,0.2,0.01)*(H.chance(.5)?1:-1),e=-H.rf(0.3,2.5,0.05),dq=e*dp,cls=x=>Math.abs(x)>1?'elastic':'inelastic';
+  const good=H.pick(['coffee','gasoline','streaming subscriptions','airline tickets','bread','sneakers']);
+  return{q:`When the price of ${good} ${dp>0?'rises':'falls'} by ${H.p(Math.abs(dp),0)}, quantity demanded ${dq<0?'falls':'rises'} by ${H.p(Math.abs(dq),1)}. Demand is best described as having a price elasticity of:`,
+    c:`${e.toFixed(2)}, ${cls(e)}`,w:[`${(1/e).toFixed(2)}, ${cls(1/e)}`,`${e.toFixed(2)}, ${cls(e)==='elastic'?'inelastic':'elastic'}`],
+    e:bxStep(`E = ${H.p(dq,1)} / ${H.p(dp,0)} = <b>${e.toFixed(2)}</b>`,`|E| ${Math.abs(e)>1?'>':'<'} 1 → ${cls(e)}`)}});
+bx('eco-shut',2,1,'Short-run shutdown and long-run exit','P ≥ ATC: stay · AVC ≤ P < ATC: operate short run, exit long run · P < AVC: shut down',H=>{
+  const avc=H.rf(10,40,0.5),atc=+(avc+H.rf(3,15,0.5)).toFixed(2),cs=H.ri(0,2),P=cs===0?+(atc+H.rf(0.5,8,0.5)).toFixed(2):cs===1?+(avc+(atc-avc)*H.rf(0.2,0.8,0.1)).toFixed(2):+(avc-H.rf(0.5,6,0.5)).toFixed(2);
+  const S=['Continue operating in both the short run and the long run','Continue operating in the short run but exit the market in the long run','Shut down production immediately'];
+  return{q:`A perfectly competitive firm faces a market price of ${H.n(P)}. At its profit-maximising output, average variable cost is ${H.n(avc)} and average total cost is ${H.n(atc)}. The firm should <i>most likely</i>:`,
+    c:S[cs],w:S.filter((_,i)=>i!==cs),
+    e:bxStep(cs===0?`P (${P}) ≥ ATC (${atc}): it covers all costs.`:cs===1?`AVC (${avc}) ≤ P (${P}) < ATC (${atc}): it covers variable costs and part of fixed costs, so it keeps producing in the short run but leaves in the long run.`:`P (${P}) < AVC (${avc}): every unit sold increases the loss, so it shuts down.`)}});
+bx('eco-mult',2,3,'Fiscal multiplier','Multiplier = 1 / [1 − c(1 − t)] ; ΔY = multiplier × ΔG',H=>{
+  const c=H.rf(0.6,0.9,0.05),t=H.rf(0.1,0.35,0.05),G=H.ri(5,80)*10,k=1/(1-c*(1-t));
+  return{q:`The marginal propensity to consume is ${c.toFixed(2)} and the tax rate is ${H.p(t,0)}. If government spending rises by ${G} billion, the eventual increase in output is <i>closest to</i>:`,
+    c:H.n(G*k,1)+' billion',w:[H.n(G/(1-c),1)+' billion',H.n(G,1)+' billion'],
+    e:bxStep(`Multiplier = 1 / [1 − ${c}(1 − ${t})] = ${k.toFixed(3)}`,`ΔY = ${G} × ${k.toFixed(3)} = <b>${H.n(G*k,1)} billion</b>`,`Ignoring taxes gives 1/(1 − c) = ${(1/(1-c)).toFixed(2)}.`)}});
+bx('eco-mm',2,4,'Money multiplier','Money multiplier = 1 / reserve requirement',H=>{
+  const rr=H.pick([0.05,0.08,0.1,0.125,0.2,0.25]),D=H.ri(1,50)*100;
+  return{q:`The required reserve ratio is ${H.p(rr,1)}. A new deposit of ${H.n(D,0)} million enters the banking system. The maximum increase in total deposits is <i>closest to</i>:`,
+    c:H.n(D/rr,0)+' million',w:[H.n(D*rr,0)+' million',H.n(D*(1/rr-1),0)+' million'],
+    e:bxStep(`Multiplier = 1 / ${rr} = ${(1/rr).toFixed(2)}`,`Total deposits = ${D} × ${(1/rr).toFixed(2)} = <b>${H.n(D/rr,0)} million</b> (${H.n(D*(1/rr-1),0)} million of it is newly created).`)}});
+bx('eco-neut',2,4,'Neutral policy rate','Neutral rate = real trend growth + inflation target',H=>{
+  const g=H.rf(0.01,0.035,0.0025),pi=H.pick([0.02,0.02,0.025,0.03]),N=g+pi,pr=+(N+H.rf(-0.025,0.025,0.0025)).toFixed(4);const st=pr>N+0.0001?'contractionary':pr<N-0.0001?'expansionary':'neutral';
+  const S={contractionary:'Contractionary, because the policy rate is above the neutral rate',expansionary:'Expansionary, because the policy rate is below the neutral rate',neutral:'Neutral, because the policy rate equals the neutral rate'};
+  return{q:`Trend real GDP growth is ${H.p(g)}, the inflation target is ${H.p(pi,1)} and the policy rate is ${H.p(pr)}. The monetary policy stance is best described as:`,
+    c:S[st],w:Object.keys(S).filter(k=>k!==st).map(k=>S[k]),
+    e:bxStep(`Neutral = ${H.p(g)} + ${H.p(pi,1)} = ${H.p(N)}`,`Policy rate ${H.p(pr)} → <b>${st}</b>`)}});
+bx('eco-cross',2,8,'Cross exchange rate','(JPY/EUR) = (JPY/USD) × (USD/EUR)',H=>{
+  const pairs=[['USD','EUR',H.rf(1.02,1.2,0.0005)],['USD','GBP',H.rf(1.18,1.38,0.0005)]][H.ri(0,1)],third=H.pick([['JPY',H.rf(130,160,0.05)],['CHF',H.rf(0.82,0.95,0.0005)],['CAD',H.rf(1.3,1.42,0.0005)]]);
+  const [usd,base,q1]=pairs,[pc,q2]=third,x=q1*q2,d=pc==='JPY'?2:4;
+  return{q:`The ${usd}/${base} rate is ${q1.toFixed(4)} and the ${pc}/${usd} rate is ${q2.toFixed(pc==='JPY'?2:4)} (price currency/base currency). The ${pc}/${base} cross rate is <i>closest to</i>:`,
+    c:x.toFixed(d),w:[(q2/q1).toFixed(d),(1/x).toFixed(4)],
+    e:bxStep(`${pc}/${base} = ${pc}/${usd} × ${usd}/${base} = ${q2} × ${q1} = <b>${x.toFixed(d)}</b>`,`The ${usd} cancels out; dividing instead of multiplying is the classic slip.`)}});
+bx('eco-fwd',2,8,'Forward rate (covered interest parity)','F(f/d) = S(f/d) × (1 + i_f·τ) / (1 + i_d·τ), τ = days/360',H=>{
+  const S=H.rf(1.05,1.45,0.0001),ip=H.rf(0.005,0.06,0.0025),ib=H.rf(0.005,0.06,0.0025),d=H.pick([90,180,270,360]),t=d/360;
+  const F=S*(1+ip*t)/(1+ib*t),Fw=S*(1+ib*t)/(1+ip*t);
+  return{q:`The spot USD/EUR rate is ${S.toFixed(4)} (USD per EUR). USD ${d}-day Libor-style rate: ${H.p(ip)}; EUR rate: ${H.p(ib)} (actual/360). The ${d}-day forward USD/EUR rate is <i>closest to</i>:`,
+    c:F.toFixed(4),w:[Fw.toFixed(4),(S*(1+ip-ib)).toFixed(4)],
+    e:bxStep(`F = ${S.toFixed(4)} × (1 + ${ip}×${d}/360) / (1 + ${ib}×${d}/360) = <b>${F.toFixed(4)}</b>`,`The price-currency rate (USD) goes in the numerator.`)}});
+bx('eco-appr',2,8,'Currency appreciation from a quote','Base currency: S₁/S₀ − 1 · price currency: S₀/S₁ − 1',H=>{
+  const S0=H.rf(1.05,1.45,0.0001),S1=+(S0*(1+H.rf(-0.08,0.08,0.002))).toFixed(4),askBase=H.chance(.5);
+  const b=S1/S0-1,pc=S0/S1-1;const v=askBase?b:pc;
+  return{q:`The GBP/EUR rate moves from ${S0.toFixed(4)} to ${S1.toFixed(4)} (GBP per EUR). The percentage change in the value of the <b>${askBase?'EUR':'GBP'}</b> is <i>closest to</i>:`,
+    c:H.p(v),w:[H.p(askBase?pc:b),H.p(-v)],
+    e:bxStep(askBase?`EUR is the base currency: ${S1.toFixed(4)}/${S0.toFixed(4)} − 1 = <b>${H.p(b)}</b>`:`GBP is the price currency: ${S0.toFixed(4)}/${S1.toFixed(4)} − 1 = <b>${H.p(pc)}</b>`)}});
+
+/* ===== Corporate Issuers ===== */
+bx('cf-ccc',3,4,'Cash conversion cycle','CCC = DIO + DSO − DPO',H=>{
+  const c=H.cur(),Rev=H.ri(200,900)*1000,COGS=Math.round(Rev*H.rf(0.5,0.75,0.01)),Inv=Math.round(COGS*H.rf(0.08,0.25,0.01)),AR=Math.round(Rev*H.rf(0.06,0.2,0.01)),AP=Math.round(COGS*H.rf(0.05,0.18,0.01));
+  const dio=Inv/(COGS/365),dso=AR/(Rev/365),dpo=AP/(COGS/365),ccc=dio+dso-dpo;
+  return{q:`${H.firm()} reports revenue of ${H.m(Rev,c,0)}, COGS of ${H.m(COGS,c,0)}, inventory of ${H.m(Inv,c,0)}, receivables of ${H.m(AR,c,0)} and payables of ${H.m(AP,c,0)}. Using a 365-day year (purchases ≈ COGS), its cash conversion cycle is <i>closest to</i>:`,
+    c:H.n(ccc,1)+' days',w:[H.n(dio+dso+dpo,1)+' days',H.n(dso-dpo,1)+' days'],
+    e:bxStep(`DIO = ${Inv}/(${COGS}/365) = ${dio.toFixed(1)}`,`DSO = ${AR}/(${Rev}/365) = ${dso.toFixed(1)}`,`DPO = ${AP}/(${COGS}/365) = ${dpo.toFixed(1)}`,`CCC = ${dio.toFixed(1)} + ${dso.toFixed(1)} − ${dpo.toFixed(1)} = <b>${ccc.toFixed(1)} days</b>`)}});
+bx('cf-trade',3,4,'Cost of trade credit','Cost = (1 + d/(1 − d))^(365/(N − discount days)) − 1',H=>{
+  const d=H.pick([0.01,0.015,0.02,0.025,0.03]),D=H.pick([10,15]),N=H.pick([30,45,60]);const per=d/(1-d),k=Math.pow(1+per,365/(N-D))-1;
+  return{q:`A supplier offers terms of ${(d*100).toFixed(1)}/${D}, net ${N}. The implicit annual cost of forgoing the discount and paying on day ${N} is <i>closest to</i>:`,
+    c:H.p(k),w:[H.p(per*365/(N-D)),H.p(d*365/N)],
+    e:bxStep(`Period cost = ${d}/(1 − ${d}) = ${H.p(per,3)} for ${N-D} days`,`Annualised = (1 + ${per.toFixed(5)})^(365/${N-D}) − 1 = <b>${H.p(k)}</b>`)}});
+bx('cf-npv',3,5,'Net present value','NPV = Σ CFₜ / (1 + r)^t − initial outlay',H=>{
+  const c=H.cur(),n=H.ri(3,5),I=H.ri(50,500)*1000,cfs=Array.from({length:n},()=>Math.round(I*H.rf(0.2,0.45,0.01)/100)*100),r=H.rf(0.06,0.14,0.005);
+  const pv=cfs.reduce((a,x,i)=>a+x/Math.pow(1+r,i+1),0),npv=pv-I,pv2=cfs.reduce((a,x,i)=>a+x/Math.pow(1+r,i+2),0);
+  return{q:`A project costs ${H.m(I,c,0)} today and generates year-end cash flows of ${cfs.map(x=>H.m(x,'',0)).join(', ')} (${c}). At a ${H.p(r,1)} cost of capital, its NPV is <i>closest to</i>:`,
+    c:H.m(npv,c,0),w:[H.m(cfs.reduce((a,x)=>a+x,0)-I,c,0),H.m(pv2-I,c,0)],
+    e:bxStep(...cfs.map((x,i)=>`${x} / ${(1+r).toFixed(3)}^${i+1} = ${(x/Math.pow(1+r,i+1)).toFixed(0)}`),`NPV = ${pv.toFixed(0)} − ${I} = <b>${H.m(npv,c,0)}</b> → ${npv>0?'accept':'reject'}`)}});
+bx('cf-irr',3,5,'Internal rate of return','IRR: the rate that sets NPV = 0',H=>{
+  const c=H.cur(),irr=H.rf(0.06,0.22,0.005),n=H.ri(3,4),I=H.ri(100,600)*1000;let cfs=Array.from({length:n-1},()=>Math.round(I*H.rf(0.2,0.4,0.01)));
+  const pvSoFar=cfs.reduce((a,x,i)=>a+x/Math.pow(1+irr,i+1),0);const last=Math.round((I-pvSoFar)*Math.pow(1+irr,n));cfs.push(last);
+  const simple=(cfs.reduce((a,x)=>a+x,0)-I)/I/n;
+  return{q:`An investment of ${H.m(I,c,0)} produces year-end cash flows of ${cfs.map(x=>H.m(x,'',0)).join(', ')} (${c}). Its IRR is <i>closest to</i>:`,
+    c:H.p(irr,1),w:[H.p(irr+H.pick([0.02,0.025,0.03]),1),H.p(simple,1)],
+    e:bxStep(`At ${H.p(irr,1)}: ${cfs.map((x,i)=>`${x}/${(1+irr).toFixed(3)}^${i+1}`).join(' + ')} ≈ ${I} → NPV ≈ 0, so <b>IRR ≈ ${H.p(irr,1)}</b>`,`${H.p(simple,1)} is the average undiscounted return, not the IRR.`)}});
+bx('cf-wacc',3,6,'Weighted average cost of capital','WACC = w_d·r_d(1 − t) + w_p·r_p + w_e·r_e',H=>{
+  const wd=H.rf(0.2,0.5,0.05),wp=H.chance(.4)?H.rf(0.05,0.15,0.05):0,we=+(1-wd-wp).toFixed(2),rd=H.rf(0.03,0.08,0.0025),rp=H.rf(0.05,0.09,0.0025),re=H.rf(0.08,0.15,0.0025),t=H.rf(0.15,0.35,0.01);
+  const w=wd*rd*(1-t)+wp*rp+we*re,w0=wd*rd+wp*rp+we*re;
+  return{q:`A company targets ${H.p(wd,0)} debt${wp?`, ${H.p(wp,0)} preferred stock`:''} and ${H.p(we,0)} equity. Pre-tax cost of debt: ${H.p(rd)}${wp?`; cost of preferred: ${H.p(rp)}`:''}; cost of equity: ${H.p(re)}; marginal tax rate: ${H.p(t,0)}. WACC is <i>closest to</i>:`,
+    c:H.p(w),w:[H.p(w0),H.p((rd*(1-t)+(wp?rp:0)+re)/(wp?3:2))],
+    e:bxStep(`${wd}×${rd}×(1 − ${t})${wp?` + ${wp}×${rp}`:''} + ${we}×${re} = <b>${H.p(w)}</b>`,`Without the tax shield: ${H.p(w0)}.`)}});
+bx('cf-mm2',3,6,'MM Proposition II with taxes','r_e = r₀ + (r₀ − r_d)(1 − t)(D/E)',H=>{
+  const r0=H.rf(0.07,0.13,0.0025),rd=H.rf(0.03,0.06,0.0025),t=H.rf(0.15,0.35,0.01),de=H.rf(0.2,1.5,0.1);
+  const re=r0+(r0-rd)*(1-t)*de;
+  return{q:`An all-equity firm has a cost of capital of ${H.p(r0)}. It moves to a debt-to-equity ratio of ${de.toFixed(1)} with debt costing ${H.p(rd)}; the tax rate is ${H.p(t,0)}. Under MM with taxes, the new cost of equity is <i>closest to</i>:`,
+    c:H.p(re),w:[H.p(r0+(r0-rd)*de),H.p(r0+(r0-rd)*(1-t)*de/(1+de))],
+    e:bxStep(`r_e = ${r0} + (${r0} − ${rd}) × (1 − ${t}) × ${de} = <b>${H.p(re)}</b>`)}});
+bx('cf-dtl',3,6,'Degree of total leverage','DOL = Q(P−V)/[Q(P−V) − F] · DFL = EBIT/(EBIT − I) · DTL = DOL × DFL',H=>{
+  const P=H.ri(20,120),V=Math.round(P*H.rf(0.3,0.7,0.05)),Q=H.ri(20,200)*1000,F=Math.round(Q*(P-V)*H.rf(0.2,0.6,0.05)),EBIT=Q*(P-V)-F,I=Math.round(EBIT*H.rf(0.1,0.5,0.05));
+  const dol=Q*(P-V)/EBIT,dfl=EBIT/(EBIT-I);
+  return{q:`A firm sells ${H.n(Q,0)} units at ${P} each; variable cost is ${V} per unit, fixed operating costs are ${H.n(F,0)} and interest expense is ${H.n(I,0)}. Its degree of total leverage is <i>closest to</i>:`,
+    c:(dol*dfl).toFixed(2),w:[dol.toFixed(2),dfl.toFixed(2)],
+    e:bxStep(`Contribution = ${Q}×(${P} − ${V}) = ${Q*(P-V)}; EBIT = ${EBIT}`,`DOL = ${dol.toFixed(2)}; DFL = ${EBIT}/(${EBIT} − ${I}) = ${dfl.toFixed(2)}`,`DTL = <b>${(dol*dfl).toFixed(2)}</b>`)}});
+
+/* ===== Financial Statement Analysis ===== */
+bx('fsa-eps',4,2,'Basic EPS with a share issuance','Basic EPS = (NI − preferred dividends) / weighted average shares',H=>{
+  const c=H.cur(),NI=H.ri(20,300)*100000,PD=H.ri(0,30)*10000,N0=H.ri(5,50)*100000,X=H.ri(1,20)*50000,mo=H.pick([[3,'1 October'],[6,'1 July'],[9,'1 April']]);
+  const w=N0+X*mo[0]/12,eps=(NI-PD)/w;
+  return{q:`${H.firm()} had ${H.n(N0,0)} shares outstanding on 1 January and issued ${H.n(X,0)} new shares on ${mo[1]}. Net income is ${H.m(NI,c,0)} and preferred dividends are ${H.m(PD,c,0)}. Basic EPS for the calendar year is <i>closest to</i>:`,
+    c:H.m(eps,c),w:[H.m(NI/w,c),H.m((NI-PD)/(N0+X),c)],
+    e:bxStep(`Weighted shares = ${N0} + ${X} × ${mo[0]}/12 = ${w.toFixed(0)}`,`EPS = (${NI} − ${PD}) / ${w.toFixed(0)} = <b>${H.m(eps,c)}</b>`)}});
+bx('fsa-deps',4,2,'Diluted EPS with convertible preferred','Diluted EPS = NI / (weighted shares + shares from conversion), if dilutive',H=>{
+  const c=H.cur(),N=H.ri(10,80)*100000,NI=Math.round(N*H.rf(1.5,6,0.1)),PD=Math.round(NI*H.rf(0.05,0.2,0.01)),C=Math.round(N*H.rf(0.05,0.25,0.01));
+  const basic=(NI-PD)/N,dil=NI/(N+C),d=Math.min(basic,dil);
+  return{q:`Net income is ${H.m(NI,c,0)}, with ${H.n(N,0)} common shares outstanding all year. Preferred dividends of ${H.m(PD,c,0)} were paid on preferred shares convertible into ${H.n(C,0)} common shares. Diluted EPS is <i>closest to</i>:`,
+    c:H.m(d,c),w:[H.m(d===basic?dil:basic,c),H.m((NI-PD)/(N+C),c)],
+    e:bxStep(`Basic = (${NI} − ${PD}) / ${N} = ${H.m(basic,c)}`,`If converted: no preferred dividend, ${N} + ${C} shares → ${NI}/${N+C} = ${H.m(dil,c)}`,dil<basic?`Dilutive → <b>${H.m(dil,c)}</b>`:`Antidilutive (higher than basic) → diluted EPS = basic = <b>${H.m(basic,c)}</b>`)}});
+bx('fsa-inv',4,6,'FIFO vs LIFO cost of goods sold','FIFO: oldest costs to COGS · LIFO: newest costs to COGS (periodic)',H=>{
+  const c=H.cur(),b=[H.ri(100,400)*10,H.rf(8,20,0.5)],p1=[H.ri(100,400)*10,+(b[1]*H.rf(1.02,1.15,0.01)).toFixed(2)],p2=[H.ri(100,400)*10,+(b[1]*H.rf(1.1,1.3,0.01)).toFixed(2)];
+  const tot=b[0]+p1[0]+p2[0],sold=Math.round(tot*H.rf(0.4,0.75,0.01)/10)*10,lay=[b,p1,p2];
+  const cogs=order=>{let left=sold,x=0;for(const[l,cst]of order){const u=Math.min(l,left);x+=u*cst;left-=u}return x};
+  const fifo=cogs(lay),lifo=cogs(lay.slice().reverse()),avg=sold*(lay.reduce((a,[u,cst])=>a+u*cst,0)/tot),ask=H.chance(.5)?'FIFO':'LIFO';
+  return{q:`Beginning inventory: ${H.n(b[0],0)} units at ${H.m(b[1],c)}. Purchases: ${H.n(p1[0],0)} units at ${H.m(p1[1],c)}, then ${H.n(p2[0],0)} units at ${H.m(p2[1],c)}. ${H.n(sold,0)} units were sold. Under periodic <b>${ask}</b>, cost of goods sold is <i>closest to</i>:`,
+    c:H.m(ask==='FIFO'?fifo:lifo,c,0),w:[H.m(ask==='FIFO'?lifo:fifo,c,0),H.m(avg,c,0)],
+    e:bxStep(`${ask} takes the ${ask==='FIFO'?'oldest':'most recent'} layers first until ${sold} units are reached.`,`COGS = <b>${H.m(ask==='FIFO'?fifo:lifo,c,0)}</b> (FIFO ${H.m(fifo,c,0)} · LIFO ${H.m(lifo,c,0)} · weighted average ${H.m(avg,c,0)})`,`With rising prices, LIFO gives the higher COGS and the lower ending inventory.`)}});
+bx('fsa-ddb',4,7,'Double-declining balance depreciation','DDB rate = 2 / useful life, applied to beginning carrying amount',H=>{
+  const c=H.cur(),cost=H.ri(20,400)*1000,life=H.pick([4,5,8,10]),salv=Math.round(cost*H.rf(0.05,0.15,0.01)),rate=2/life,y1=cost*rate,y2=(cost-y1)*rate;
+  return{q:`Equipment costs ${H.m(cost,c,0)}, has a ${life}-year life and a residual value of ${H.m(salv,c,0)}. Using double-declining balance, depreciation in <b>year 2</b> is <i>closest to</i>:`,
+    c:H.m(y2,c,0),w:[H.m((cost-salv)/life,c,0),H.m((cost-salv)*rate*(1-rate),c,0)],
+    e:bxStep(`Rate = 2/${life} = ${H.p(rate,1)}`,`Year 1 = ${cost} × ${rate.toFixed(3)} = ${y1.toFixed(0)}`,`Year 2 = (${cost} − ${y1.toFixed(0)}) × ${rate.toFixed(3)} = <b>${H.m(y2,c,0)}</b>`,`Residual value is ignored in the DDB base (it only caps total depreciation).`)}});
+bx('fsa-dtl',4,9,'Deferred tax liability','DTL = (carrying amount − tax base) × tax rate',H=>{
+  const c=H.cur(),cost=H.ri(50,500)*1000,life=H.pick([4,5,8,10]),t=H.rf(0.2,0.35,0.01),book=cost/life,tax=cost*2/life;
+  const diff=tax-book;
+  return{q:`An asset costing ${H.m(cost,c,0)} is depreciated straight-line over ${life} years in the financial statements and by double-declining balance for tax. The tax rate is ${H.p(t,0)}. At the end of year 1, the deferred tax liability is <i>closest to</i>:`,
+    c:H.m(diff*t,c,0),w:[H.m(diff*(1-t),c,0),H.m(diff,c,0)],
+    e:bxStep(`Carrying amount = ${cost} − ${book.toFixed(0)} = ${(cost-book).toFixed(0)}; tax base = ${cost} − ${tax.toFixed(0)} = ${(cost-tax).toFixed(0)}`,`Difference ${diff.toFixed(0)} × ${t} = <b>${H.m(diff*t,c,0)}</b>`)}});
+bx('fsa-dupont',4,11,'DuPont ROE','ROE = net profit margin × asset turnover × (assets / equity)',H=>{
+  const npm=H.rf(0.03,0.18,0.005),at=H.rf(0.5,2,0.05),de=H.rf(0.2,1.5,0.05),em=1+de;
+  return{q:`A company has a net profit margin of ${H.p(npm,1)}, total asset turnover of ${at.toFixed(2)} and a debt-to-equity ratio of ${de.toFixed(2)} (liabilities consist only of debt). Its ROE is <i>closest to</i>:`,
+    c:H.p(npm*at*em),w:[H.p(npm*at*de),H.p(npm*at)],
+    e:bxStep(`Equity multiplier = assets/equity = 1 + D/E = ${em.toFixed(2)}`,`ROE = ${H.p(npm,1)} × ${at.toFixed(2)} × ${em.toFixed(2)} = <b>${H.p(npm*at*em)}</b>`,`${H.p(npm*at)} is ROA.`)}});
+bx('fsa-cfo',4,4,'Cash flow from operations (indirect method)','CFO = NI + non-cash charges − gains − ΔAR − Δinventory + ΔAP',H=>{
+  const c=H.cur(),NI=H.ri(100,900)*1000,dep=Math.round(NI*H.rf(0.1,0.4,0.01)),gain=Math.round(NI*H.rf(0,0.15,0.01)),dAR=Math.round(NI*H.rf(-0.1,0.2,0.01)),dInv=Math.round(NI*H.rf(-0.15,0.15,0.01)),dAP=Math.round(NI*H.rf(-0.1,0.15,0.01));
+  const cfo=NI+dep-gain-dAR-dInv+dAP,wrong=NI+dep+gain+dAR+dInv-dAP;
+  const ch=(x,l)=>`${l} ${x>=0?'increased':'decreased'} by ${H.m(Math.abs(x),c,0)}`;
+  return{q:`Net income is ${H.m(NI,c,0)}, depreciation ${H.m(dep,c,0)} and the gain on sale of equipment ${H.m(gain,c,0)}. ${ch(dAR,'Receivables')}, ${ch(dInv,'inventory').toLowerCase()} and ${ch(dAP,'payables').toLowerCase()}. Cash flow from operations is <i>closest to</i>:`,
+    c:H.m(cfo,c,0),w:[H.m(cfo+2*gain===cfo?wrong:cfo+2*gain,c,0),H.m(wrong,c,0)],
+    e:bxStep(`${NI} + ${dep} − ${gain} − (${dAR}) − (${dInv}) + (${dAP}) = <b>${H.m(cfo,c,0)}</b>`,`Increases in operating assets use cash; increases in operating liabilities provide cash; the gain belongs to investing activities.`)}});
+bx('fsa-quick',4,11,'Liquidity ratios','Current = CA/CL · Quick = (cash + ST investments + receivables)/CL · Cash = (cash + ST inv.)/CL',H=>{
+  const cash=H.ri(5,80)*1000,sti=H.ri(0,50)*1000,ar=H.ri(10,120)*1000,inv=H.ri(10,150)*1000,cl=H.ri(40,250)*1000,ask=H.pick(['quick','current','cash']);
+  const v={quick:(cash+sti+ar)/cl,current:(cash+sti+ar+inv)/cl,cash:(cash+sti)/cl};
+  return{q:`Cash ${H.n(cash,0)}, short-term investments ${H.n(sti,0)}, receivables ${H.n(ar,0)}, inventory ${H.n(inv,0)}, current liabilities ${H.n(cl,0)}. The <b>${ask} ratio</b> is <i>closest to</i>:`,
+    c:v[ask].toFixed(2),w:Object.keys(v).filter(k=>k!==ask).map(k=>v[k].toFixed(2)),
+    e:bxStep(`Current ${v.current.toFixed(2)} · quick ${v.quick.toFixed(2)} · cash ${v.cash.toFixed(2)} → <b>${v[ask].toFixed(2)}</b>`,`The quick ratio excludes inventory; the cash ratio also excludes receivables.`)}});
+
+/* ===== Equity ===== */
+bx('eq-ggm',5,6,'Gordon growth model','V₀ = D₁ / (r − g) = D₀(1 + g) / (r − g)',H=>{
+  const c=H.cur(),D0=H.rf(0.5,6,0.05),g=H.rf(0.02,0.06,0.0025),r=+(g+H.rf(0.03,0.07,0.0025)).toFixed(4),v=D0*(1+g)/(r-g);
+  return{q:H.say(`${H.firm()} just paid a dividend of ${H.m(D0,c)} which is expected to grow at ${H.p(g)} indefinitely. With a required return of ${H.p(r)}, the intrinsic value per share is <i>closest to</i>:`,`A stock's most recent dividend is ${H.m(D0,c)}. Dividends grow at a constant ${H.p(g)} and investors require ${H.p(r)}. What is the value of the share?`),
+    c:H.m(v,c),w:[H.m(D0/(r-g),c),H.m(D0*(1+g)/r,c)],
+    e:bxStep(`D₁ = ${D0} × (1 + ${g}) = ${(D0*(1+g)).toFixed(4)}`,`V₀ = ${(D0*(1+g)).toFixed(4)} / (${r} − ${g}) = <b>${H.m(v,c)}</b>`)}});
+bx('eq-pe',5,7,'Justified P/E','Leading P/E = payout / (r − g) · trailing P/E = payout × (1 + g) / (r − g)',H=>{
+  const p=H.rf(0.25,0.7,0.05),g=H.rf(0.02,0.06,0.0025),r=+(g+H.rf(0.03,0.07,0.0025)).toFixed(4),lead=H.chance(.5),L=p/(r-g),T=p*(1+g)/(r-g);
+  return{q:`A company pays out ${H.p(p,0)} of earnings, dividends grow at ${H.p(g)} and the required return is ${H.p(r)}. Its justified <b>${lead?'leading':'trailing'}</b> P/E is <i>closest to</i>:`,
+    c:(lead?L:T).toFixed(2),w:[(lead?T:L).toFixed(2),(p/r).toFixed(2)],
+    e:bxStep(`Leading = ${p}/(${r} − ${g}) = ${L.toFixed(2)}; trailing = leading × (1 + g) = ${T.toFixed(2)}`,`→ <b>${(lead?L:T).toFixed(2)}</b>`)}});
+bx('eq-margin',5,3,'Margin call price','P = P₀ × (1 − initial margin) / (1 − maintenance margin)',H=>{
+  const c=H.cur(),P0=H.rf(20,150,0.5),im=H.pick([0.4,0.5,0.6]),mm=H.pick([0.25,0.3,0.35]),P=P0*(1-im)/(1-mm);
+  return{q:`${H.name()} buys shares at ${H.m(P0,c)} on margin, with an initial margin of ${H.p(im,0)} and a maintenance margin of ${H.p(mm,0)}. Below which price will a margin call occur?`,
+    c:H.m(P,c),w:[H.m(P0*(1-mm),c),H.m(P0*im/mm*(1-im),c)],
+    e:bxStep(`Loan per share = ${P0} × (1 − ${im}) = ${(P0*(1-im)).toFixed(2)}`,`Margin call when (P − loan)/P = ${mm} → P = loan/(1 − ${mm}) = <b>${H.m(P,c)}</b>`)}});
+bx('eq-lev',5,3,'Return on a leveraged (margin) purchase','Return on equity = (P₁ − P₀ + D − interest) / equity invested',H=>{
+  const c=H.cur(),P0=H.rf(20,100,0.5),P1=+(P0*(1+H.rf(-0.2,0.35,0.01))).toFixed(2),D=+(P0*H.rf(0,0.04,0.005)).toFixed(2),im=H.pick([0.4,0.5,0.6]),i=H.rf(0.03,0.08,0.0025);
+  const loan=P0*(1-im),eq=P0*im,ret=(P1-P0+D-loan*i)/eq;
+  return{q:`An investor buys a share at ${H.m(P0,c)} with ${H.p(im,0)} initial margin, borrowing the rest at ${H.p(i)}. One year later the share pays a ${H.m(D,c)} dividend and is sold at ${H.m(P1,c)}. The return on the investor's equity is <i>closest to</i>:`,
+    c:H.p(ret),w:[H.p((P1-P0+D)/P0),H.p((P1-P0+D)/eq)],
+    e:bxStep(`Equity = ${eq.toFixed(2)}; loan = ${loan.toFixed(2)}; interest = ${(loan*i).toFixed(2)}`,`(${P1} − ${P0} + ${D} − ${(loan*i).toFixed(2)}) / ${eq.toFixed(2)} = <b>${H.p(ret)}</b>`)}});
+bx('eq-capm',5,12,'CAPM required return','E(R) = R_f + β [E(R_M) − R_f]',H=>{
+  const rf=H.rf(0.01,0.05,0.0025),rm=+(rf+H.rf(0.03,0.08,0.0025)).toFixed(4),b=H.rf(0.4,1.8,0.05),er=rf+b*(rm-rf);
+  return{q:H.say(`The risk-free rate is ${H.p(rf)}, the expected market return is ${H.p(rm)} and ${H.firm()}'s beta is ${b.toFixed(2)}. Its required return under the CAPM is <i>closest to</i>:`,`With a beta of ${b.toFixed(2)}, a market risk premium of ${H.p(rm-rf)} and a risk-free rate of ${H.p(rf)}, what return does the CAPM require?`),
+    c:H.p(er),w:[H.p(rf+b*rm),H.p(b*rm)],
+    e:bxStep(`${H.p(rf)} + ${b.toFixed(2)} × (${H.p(rm)} − ${H.p(rf)}) = <b>${H.p(er)}</b>`)}});
+
+/* ===== Fixed Income ===== */
+bx('fi-price',6,6,'Bond price from yield-to-maturity','P = Σ C/(1 + r)^t + FV/(1 + r)^N',H=>{
+  const cr=H.rf(0.02,0.08,0.0025),y=+(cr+H.rf(-0.025,0.03,0.0025)).toFixed(4),n=H.ri(3,12),semi=H.chance(.4);
+  const price=(cpn,rate,N)=>{let p=0;for(let t=1;t<=N;t++)p+=cpn/Math.pow(1+rate,t);return p+100/Math.pow(1+rate,N)};
+  const P=semi?price(cr*50,y/2,2*n):price(cr*100,y,n),Pw=semi?price(cr*100,y,n):price(cr*50,y/2,2*n);
+  return{q:`A ${n}-year bond pays a ${H.p(cr)} coupon ${semi?'semiannually':'annually'}. Its yield-to-maturity is ${H.p(y)} (${semi?'semiannual bond basis':'annual'}). Its price per 100 of par is <i>closest to</i>:`,
+    c:H.n(P,3),w:[H.n(Pw,3),H.n(100+(cr-y)*100*n,3)],
+    e:bxStep(semi?`Coupon ${(cr*50).toFixed(3)} per period, rate ${H.p(y/2,3)}, ${2*n} periods`:`Coupon ${(cr*100).toFixed(2)}, rate ${H.p(y)}, ${n} periods`,`Price = <b>${H.n(P,3)}</b> (${P>100?'premium: coupon > yield':P<100?'discount: coupon < yield':'par'})`)}});
+bx('fi-cy',6,7,'Current yield','Current yield = annual coupon / price',H=>{
+  const cr=H.rf(0.02,0.09,0.0025),P=H.rf(85,115,0.25),n=H.ri(3,15);
+  return{q:`A bond with a ${H.p(cr)} annual coupon and ${n} years to maturity trades at ${H.n(P)} per 100 of par. Its current yield is <i>closest to</i>:`,
+    c:H.p(cr*100/P),w:[H.p(cr),H.p((cr*100+(100-P)/n)/((100+P)/2))],
+    e:bxStep(`${(cr*100).toFixed(2)} / ${P} = <b>${H.p(cr*100/P)}</b>`,`Current yield ignores the pull to par; ${H.p((cr*100+(100-P)/n)/((100+P)/2))} is an approximate YTM.`)}});
+bx('fi-fwd',6,9,'Implied forward rate','(1 + S₂)² = (1 + S₁)(1 + 1y1y)',H=>{
+  const s1=H.rf(0.01,0.06,0.0025),s2=+(s1+H.rf(-0.01,0.02,0.0025)).toFixed(4),f=Math.pow(1+s2,2)/(1+s1)-1;
+  return{q:`The 1-year spot rate is ${H.p(s1)} and the 2-year spot rate is ${H.p(s2)}. The implied one-year rate one year from now (1y1y) is <i>closest to</i>:`,
+    c:H.p(f),w:[H.p((s1+s2)/2),H.p((1+s2)/(1+s1)-1)],
+    e:bxStep(`(1 + ${s2})² / (1 + ${s1}) − 1 = <b>${H.p(f)}</b>`,`An upward-sloping spot curve implies forwards above the spot rates.`)}});
+bx('fi-dur',6,11,'Price change with modified duration','ModDur = MacDur / (1 + r) · %ΔP ≈ −ModDur × Δy',H=>{
+  const mac=H.rf(2,12,0.05),y=H.rf(0.02,0.08,0.0025),dy=H.pick([-100,-75,-50,-25,25,50,75,100])/10000,mod=mac/(1+y),pc=-mod*dy;
+  return{q:`A bond has a Macaulay duration of ${mac.toFixed(2)} and an annual yield-to-maturity of ${H.p(y)}. If its yield ${dy>0?'rises':'falls'} by ${Math.abs(dy*10000)} bp, the approximate percentage price change is:`,
+    c:(pc>0?'+':'')+H.p(pc),w:[(-mac*dy>0?'+':'')+H.p(-mac*dy),(mod*dy>0?'+':'')+H.p(mod*dy)],
+    e:bxStep(`ModDur = ${mac.toFixed(2)} / (1 + ${y}) = ${mod.toFixed(3)}`,`%ΔP ≈ −${mod.toFixed(3)} × ${dy>0?'+':''}${dy} = <b>${(pc>0?'+':'')+H.p(pc)}</b>`,`Price moves opposite to yield; Macaulay duration must first be converted.`)}});
+bx('fi-conv',6,12,'Duration and convexity adjustment','%ΔP ≈ −ModDur·Δy + ½·Convexity·(Δy)²',H=>{
+  const mod=H.rf(3,14,0.05),cvx=H.rf(15,200,0.5),dy=H.pick([-200,-150,-100,100,150,200])/10000,pc=-mod*dy+0.5*cvx*dy*dy;
+  return{q:`A bond has a modified duration of ${mod.toFixed(2)} and an annual convexity of ${cvx.toFixed(1)}. For a ${dy>0?'+':'−'}${Math.abs(dy*10000)} bp change in yield, the estimated percentage price change is <i>closest to</i>:`,
+    c:(pc>0?'+':'')+H.p(pc),w:[(-mod*dy>0?'+':'')+H.p(-mod*dy),((-mod*dy+cvx*dy*dy)>0?'+':'')+H.p(-mod*dy+cvx*dy*dy)],
+    e:bxStep(`Duration effect: −${mod.toFixed(2)} × ${dy} = ${H.p(-mod*dy)}`,`Convexity effect: ½ × ${cvx} × ${dy}² = ${H.p(0.5*cvx*dy*dy)}`,`Total ≈ <b>${(pc>0?'+':'')+H.p(pc)}</b> — convexity always adds for a plain bond.`)}});
+bx('fi-el',6,14,'Expected credit loss','Expected loss = POD × LGD ; LGD = exposure × (1 − recovery rate)',H=>{
+  const c=H.cur(),E=H.ri(1,50)*1e6,pd=H.rf(0.005,0.08,0.0025),rr=H.rf(0.2,0.7,0.05);
+  return{q:`A bond position has an exposure of ${H.m(E,c,0)}. The probability of default is ${H.p(pd)} and the recovery rate is ${H.p(rr,0)}. The expected loss is <i>closest to</i>:`,
+    c:H.m(E*pd*(1-rr),c,0),w:[H.m(E*pd,c,0),H.m(E*pd*rr,c,0)],
+    e:bxStep(`LGD = ${E} × (1 − ${rr}) = ${(E*(1-rr)).toFixed(0)}`,`EL = ${pd} × ${(E*(1-rr)).toFixed(0)} = <b>${H.m(E*pd*(1-rr),c,0)}</b>`)}});
+
+/* ===== Derivatives ===== */
+bx('der-fwd',7,5,'Forward price with an income-paying asset','F₀(T) = [S₀ − PV(income)] × (1 + r)^T',H=>{
+  const c=H.cur(),S=H.rf(30,150,0.5),r=H.rf(0.01,0.06,0.0025),T=H.pick([0.5,0.75,1]),D=+(S*H.rf(0.005,0.03,0.001)).toFixed(2),tD=+(T/2).toFixed(3);
+  const pvD=D/Math.pow(1+r,tD),F=(S-pvD)*Math.pow(1+r,T);
+  return{q:`A stock trades at ${H.m(S,c)} and will pay a ${H.m(D,c)} dividend in ${tD*12} months. The annual risk-free rate is ${H.p(r)}. The no-arbitrage price of a ${T*12}-month forward is <i>closest to</i>:`,
+    c:H.m(F,c),w:[H.m(S*Math.pow(1+r,T),c),H.m((S+pvD)*Math.pow(1+r,T),c)],
+    e:bxStep(`PV(dividend) = ${D} / (1 + ${r})^${tD} = ${pvD.toFixed(3)}`,`F = (${S} − ${pvD.toFixed(3)}) × (1 + ${r})^${T} = <b>${H.m(F,c)}</b>`,`Income reduces the forward price; carrying costs would increase it.`)}});
+bx('der-opt',7,2,'Option payoff and profit at expiration','Long call profit = max(0, S_T − X) − c · long put profit = max(0, X − S_T) − p',H=>{
+  const c=H.cur(),X=H.ri(20,150),call=H.chance(.5),prem=+(X*H.rf(0.02,0.08,0.005)).toFixed(2),ST=+(X*(1+H.rf(-0.25,0.25,0.01))).toFixed(2);
+  const pay=call?Math.max(0,ST-X):Math.max(0,X-ST),prof=pay-prem;
+  return{q:`An investor buys a ${call?'call':'put'} with an exercise price of ${H.m(X,c)} for a premium of ${H.m(prem,c)}. At expiration the underlying is at ${H.m(ST,c)}. The investor's profit per share is:`,
+    c:H.m(prof,c),w:[H.m(pay,c)===H.m(prof,c)?H.m(prof+2*prem,c):H.m(pay,c),H.m(-prof,c)],
+    e:bxStep(`Payoff = max(0, ${call?`${ST} − ${X}`:`${X} − ${ST}`}) = ${pay.toFixed(2)}`,`Profit = ${pay.toFixed(2)} − ${prem} = <b>${H.m(prof,c)}</b>`)}});
+bx('der-pcp',7,9,'Put–call parity','S₀ + p₀ = c₀ + X / (1 + r)^T',H=>{
+  const c=H.cur(),S=H.rf(40,120,0.5),X=Math.round(S*H.rf(0.9,1.1,0.01)),r=H.rf(0.01,0.06,0.0025),T=H.pick([0.25,0.5,1]),call=+(S*H.rf(0.04,0.12,0.005)).toFixed(2);
+  const pv=X/Math.pow(1+r,T),put=call+pv-S;if(put<=0.05)return H.R&&bxAgain(H,'der-pcp');
+  return{q:`A European call with an exercise price of ${H.m(X,c)} and ${T*12} months to expiry costs ${H.m(call,c)}. The stock trades at ${H.m(S,c)} and the risk-free rate is ${H.p(r)}. By put–call parity, the matching European put is worth <i>closest to</i>:`,
+    c:H.m(put,c),w:[H.m(call+X-S,c),H.m(call+S-pv,c)],
+    e:bxStep(`PV(X) = ${X} / (1 + ${r})^${T} = ${pv.toFixed(3)}`,`p = c + PV(X) − S = ${call} + ${pv.toFixed(3)} − ${S} = <b>${H.m(put,c)}</b>`)}});
+function bxAgain(H,id){return BONUS_BY['bx.'+id].fn(H)}
+bx('der-bin',7,10,'One-period binomial option value','q = (1 + r − d)/(u − d) · c₀ = [q·c_u + (1 − q)·c_d] / (1 + r)',H=>{
+  const c=H.cur(),S=H.ri(40,120),u=H.rf(1.1,1.35,0.05),d=+H.rf(0.75,0.92,0.01).toFixed(2),r=H.rf(0.01,0.06,0.0025),X=Math.round(S*H.rf(0.95,1.08,0.01));
+  const q=(1+r-d)/(u-d),cu=Math.max(0,S*u-X),cd=Math.max(0,S*d-X),v=(q*cu+(1-q)*cd)/(1+r);
+  return{q:`A stock at ${H.m(S,c)} will move up by a factor of ${u.toFixed(2)} or down by a factor of ${d.toFixed(2)} in one year. The risk-free rate is ${H.p(r)}. The value of a one-year European call with an exercise price of ${H.m(X,c)} is <i>closest to</i>:`,
+    c:H.m(v,c),w:[H.m(q*cu+(1-q)*cd,c),H.m((0.5*cu+0.5*cd)/(1+r),c)],
+    e:bxStep(`q = (1 + ${r} − ${d}) / (${u.toFixed(2)} − ${d}) = ${q.toFixed(4)}`,`c_u = ${cu.toFixed(2)}, c_d = ${cd.toFixed(2)}`,`c₀ = (${q.toFixed(4)}×${cu.toFixed(2)} + ${(1-q).toFixed(4)}×${cd.toFixed(2)}) / ${(1+r).toFixed(4)} = <b>${H.m(v,c)}</b>`)}});
+
+/* ===== Alternative Investments ===== */
+bx('alt-fees',8,2,'Hedge fund net return after fees','Management fee on year-end AUM; incentive fee on gains net of the management fee',H=>{
+  const V0=H.ri(50,500),g=H.rf(0.05,0.3,0.005),mf=H.pick([0.01,0.015,0.02]),inc=H.pick([0.1,0.15,0.2]);
+  const end=V0*(1+g),m=mf*end,i=inc*(end-V0-m),net=(end-m-i)/V0-1,iW=inc*(end-V0),netW=(end-m-iW)/V0-1,netB=(end-mf*V0-inc*(end-V0-mf*V0))/V0-1;
+  return{q:`A fund starts the year at ${V0} million and earns a gross return of ${H.p(g,1)}. It charges a ${H.p(mf,1)} management fee on year-end assets and a ${H.p(inc,0)} incentive fee on gains net of the management fee (no hurdle). The investor's net return is <i>closest to</i>:`,
+    c:H.p(net),w:[H.p(netW),H.p(netB)===H.p(net)?H.p(g-mf-inc*g):H.p(netB)],
+    e:bxStep(`Year-end = ${end.toFixed(2)}; management fee = ${m.toFixed(3)}`,`Incentive = ${inc} × (${end.toFixed(2)} − ${V0} − ${m.toFixed(3)}) = ${i.toFixed(3)}`,`Net = (${end.toFixed(2)} − ${m.toFixed(3)} − ${i.toFixed(3)}) / ${V0} − 1 = <b>${H.p(net)}</b>`)}});
+bx('alt-cap',8,4,'Direct capitalization (cap rate)','Value = NOI / cap rate ; NOI = rental income − operating expenses (before financing)',H=>{
+  const c=H.cur(),rent=H.ri(500,5000)*1000,opex=Math.round(rent*H.rf(0.2,0.45,0.01)),int=Math.round(rent*H.rf(0.1,0.25,0.01)),cap=H.rf(0.04,0.09,0.0025),noi=rent-opex;
+  return{q:`A property generates rental income of ${H.m(rent,c,0)}, operating expenses of ${H.m(opex,c,0)} and interest expense of ${H.m(int,c,0)}. With a market cap rate of ${H.p(cap)}, its value is <i>closest to</i>:`,
+    c:H.m(noi/cap,c,0),w:[H.m(rent/cap,c,0),H.m((noi-int)/cap,c,0)],
+    e:bxStep(`NOI = ${rent} − ${opex} = ${noi} (financing costs excluded)`,`Value = ${noi} / ${cap} = <b>${H.m(noi/cap,c,0)}</b>`)}});
+
+/* ===== Portfolio Management ===== */
+bx('pm-util',9,1,'Utility and portfolio choice','U = E(r) − ½ A σ²',H=>{
+  const A=H.ri(2,8);let P;for(let i=0;i<40;i++){P=['W','X','Y'].map(k=>({k,m:H.rf(0.04,0.16,0.005),s:H.rf(0.05,0.35,0.01)}));P.forEach(x=>x.u=x.m-0.5*A*x.s*x.s);const b=P.reduce((x,y)=>y.u>x.u?y:x),hm=P.reduce((x,y)=>y.m>x.m?y:x),ls=P.reduce((x,y)=>y.s<x.s?y:x);if(b!==hm&&b!==ls)break}
+  const b=P.reduce((x,y)=>y.u>x.u?y:x);
+  return{q:`An investor has a risk-aversion coefficient of ${A}. Which portfolio gives the highest utility?<br>${P.map(x=>`Portfolio ${x.k}: E(r) ${H.p(x.m,1)}, σ ${H.p(x.s,0)}`).join('<br>')}`,
+    c:'Portfolio '+b.k,w:P.filter(x=>x!==b).map(x=>'Portfolio '+x.k),
+    e:bxStep(...P.map(x=>`U(${x.k}) = ${x.m.toFixed(3)} − ½×${A}×${x.s.toFixed(2)}² = ${x.u.toFixed(4)}`),`→ <b>Portfolio ${b.k}</b>`)}});
+bx('pm-sharpe',9,2,'Sharpe and Treynor ratios','Sharpe = (R_P − R_f)/σ_P · Treynor = (R_P − R_f)/β_P',H=>{
+  const rp=H.rf(0.05,0.16,0.0025),rf=H.rf(0.01,0.04,0.0025),s=H.rf(0.08,0.3,0.005),b=H.rf(0.6,1.5,0.05),ask=H.chance(.5)?'Sharpe':'Treynor';
+  const sh=(rp-rf)/s,tr=(rp-rf)/b;
+  return{q:`A portfolio returned ${H.p(rp)} with a standard deviation of ${H.p(s,1)} and a beta of ${b.toFixed(2)}; the risk-free rate is ${H.p(rf)}. Its <b>${ask} ratio</b> is <i>closest to</i>:`,
+    c:(ask==='Sharpe'?sh:tr).toFixed(3),w:[(ask==='Sharpe'?tr:sh).toFixed(3),(rp/(ask==='Sharpe'?s:b)).toFixed(3)],
+    e:bxStep(`Sharpe = (${rp} − ${rf}) / ${s} = ${sh.toFixed(3)} · Treynor = (${rp} − ${rf}) / ${b} = ${tr.toFixed(3)}`,`→ <b>${(ask==='Sharpe'?sh:tr).toFixed(3)}</b>`)}});
+bx('pm-alpha',9,2,"Jensen's alpha",'α = R_P − [R_f + β_P (R_M − R_f)]',H=>{
+  const rf=H.rf(0.01,0.04,0.0025),rm=+(rf+H.rf(0.03,0.08,0.0025)).toFixed(4),b=H.rf(0.5,1.6,0.05),rp=+(rf+b*(rm-rf)+H.rf(-0.03,0.03,0.0025)).toFixed(4);
+  const a=rp-(rf+b*(rm-rf));
+  return{q:`A manager earned ${H.p(rp)} with a beta of ${b.toFixed(2)}. The market returned ${H.p(rm)} and the risk-free rate was ${H.p(rf)}. Jensen's alpha is <i>closest to</i>:`,
+    c:H.p(a),w:[H.p(rp-rm),H.p(rp-b*rm)],
+    e:bxStep(`Required = ${H.p(rf)} + ${b.toFixed(2)} × (${H.p(rm)} − ${H.p(rf)}) = ${H.p(rf+b*(rm-rf))}`,`α = ${H.p(rp)} − ${H.p(rf+b*(rm-rf))} = <b>${H.p(a)}</b>`)}});
+bx('pm-beta',9,2,'Beta from correlation and volatilities','β_i = ρ_i,M × σ_i / σ_M = Cov(i, M) / σ²_M',H=>{
+  const rho=H.rf(0.2,0.95,0.05),si=H.rf(0.12,0.45,0.01),sm=H.rf(0.12,0.22,0.01),b=rho*si/sm;
+  return{q:`A stock's return volatility is ${H.p(si,0)}, the market's is ${H.p(sm,0)} and their correlation is ${rho.toFixed(2)}. The stock's beta is <i>closest to</i>:`,
+    c:b.toFixed(2),w:[(rho*sm/si).toFixed(2),(si/sm).toFixed(2)],
+    e:bxStep(`β = ${rho.toFixed(2)} × ${si} / ${sm} = <b>${b.toFixed(2)}</b>`)}});
+
+/* ===== Ethics: scenario variants (names, firms, amounts and wording change at every draw) ===== */
+const ETH_STD={'I(A)':'Standard I(A) Knowledge of the Law','I(B)':'Standard I(B) Independence and Objectivity','I(C)':'Standard I(C) Misrepresentation','I(D)':'Standard I(D) Misconduct','I(E)':'Standard I(E) Competence',
+  'II(A)':'Standard II(A) Material Nonpublic Information','II(B)':'Standard II(B) Market Manipulation','III(A)':'Standard III(A) Loyalty, Prudence, and Care','III(B)':'Standard III(B) Fair Dealing','III(C)':'Standard III(C) Suitability','III(D)':'Standard III(D) Performance Presentation','III(E)':'Standard III(E) Preservation of Confidentiality',
+  'IV(A)':'Standard IV(A) Loyalty (to employer)','IV(B)':'Standard IV(B) Additional Compensation Arrangements','IV(C)':'Standard IV(C) Responsibilities of Supervisors','V(A)':'Standard V(A) Diligence and Reasonable Basis','V(B)':'Standard V(B) Communication with Clients and Prospective Clients','V(C)':'Standard V(C) Record Retention',
+  'VI(A)':'Standard VI(A) Avoid or Disclose Conflicts','VI(B)':'Standard VI(B) Priority of Transactions','VI(C)':'Standard VI(C) Referral Fees','VII(A)':'Standard VII(A) Conduct as Participants in CFA Institute Programs','VII(B)':'Standard VII(B) Reference to CFA Institute, the CFA Designation, and the CFA Program'};
+const ETH_SC={
+  3:[['I(A)',H=>`${H.name()} works in a country whose securities law is less strict than the Code and Standards. A colleague says local law is all that needs to be followed.`,'Members must follow the stricter of applicable law and the Code and Standards.'],
+     ['I(B)',H=>`${H.name()}, a sell-side analyst, accepts a fully paid week at a luxury resort from ${H.firm()}, the company being covered, and then upgrades the stock without new information.`,'Accepting lavish gifts from an issuer compromises independence and objectivity; modest, customary hospitality is acceptable.'],
+     ['I(C)',H=>`${H.name()} copies several paragraphs and a chart from another firm's research into a client report without citing the source.`,'Using others\' work without attribution is plagiarism, a form of misrepresentation.'],
+     ['I(D)',H=>`${H.name()} repeatedly submits falsified expense reports to the employer to obtain reimbursement for personal trips.`,'Dishonest, fraudulent conduct reflects adversely on professional integrity.'],
+     ['I(E)',H=>`${H.name()} agrees to manage a complex structured-credit portfolio without having the knowledge to do so and makes no effort to acquire it.`,'Members must act with and maintain the competence needed for their professional activities.']],
+  4:[['II(A)',H=>`At a dinner, ${H.name()} overhears the CFO of ${H.firm()} mention an unannounced takeover bid and buys the target's shares the next morning.`,'Trading on material nonpublic information is prohibited.'],
+     ['II(B)',H=>`${H.name()} posts misleading rumours on social media about a thinly traded stock to push its price up, then sells the position.`,'Spreading false information to distort prices is information-based market manipulation.']],
+  5:[['III(A)',H=>`${H.name()} directs client trades to a broker offering poor execution because the broker supplies research used only by the firm's proprietary desk.`,'Client brokerage belongs to the client and must be used for the client\'s benefit.'],
+     ['III(B)',H=>`${H.name()} changes a recommendation from buy to sell and tells the firm's largest clients first, before the change is disseminated to everyone else.`,'All clients must be treated fairly when disseminating recommendations and taking action.'],
+     ['III(C)',H=>`${H.name()} puts most of a retired client's savings, whose stated objective is capital preservation, into leveraged derivatives.`,'Investments must be suitable for the client\'s objectives, risk tolerance and constraints.'],
+     ['III(D)',H=>`${H.name()}'s marketing brochure shows only the composite of the firm's three best-performing accounts as "firm performance".`,'Performance must be fair, accurate and complete; cherry-picking accounts misleads.'],
+     ['III(E)',H=>`${H.name()} tells a friend at a party about a client's personal financial difficulties; no illegal activity is involved.`,'Information about current, former and prospective clients must be kept confidential.']],
+  6:[['IV(A)',H=>`Before resigning, ${H.name()} copies the employer's client list on a personal drive to solicit those clients for a new firm.`,'Members must not deprive the employer of the advantage of their skills or take employer property such as client lists.'],
+     ['IV(B)',H=>`${H.name()} accepts a bonus from a client for outperforming a target, without telling the employer or obtaining written consent.`,'Compensation that may conflict with the employer\'s interest requires written consent from all parties.'],
+     ['IV(C)',H=>`${H.name()}, a compliance supervisor, knows procedures are inadequate but does nothing; a subordinate then front-runs client orders.`,'Supervisors must make reasonable efforts, including adequate compliance procedures, to prevent violations.']],
+  7:[['V(A)',H=>`${H.name()} issues a strong-buy recommendation on ${H.firm()} based solely on a third-party report, without checking its assumptions.`,'Recommendations need diligence and a reasonable, adequate basis.'],
+     ['V(B)',H=>`${H.name()}'s team switches from fundamental to purely quantitative stock selection without informing clients.`,'Clients must be told about the investment process and promptly informed of significant changes.'],
+     ['V(C)',H=>`After publishing a report, ${H.name()} discards all supporting notes and models to save storage space.`,'Records supporting recommendations must be retained (seven years recommended absent regulation).']],
+  8:[['VI(A)',H=>`${H.name()} recommends ${H.firm()} to clients without disclosing a large personal holding in the stock.`,'Matters that could impair objectivity, such as personal holdings, must be disclosed.'],
+     ['VI(B)',H=>`${H.name()} buys shares for a personal account just before executing a large block purchase for client accounts.`,'Client and employer transactions take priority over personal transactions (no front-running).'],
+     ['VI(C)',H=>`${H.name()} receives a fee from an estate lawyer for every client referred, and tells neither the employer nor the clients.`,'Referral compensation must be disclosed to the employer, clients and prospective clients.']],
+  9:[['VII(A)',H=>`After sitting the Level I exam, ${H.name()} posts on a forum the specific topics and formulas tested.`,'Disclosing confidential exam information compromises the integrity of the CFA Program.'],
+     ['VII(B)',H=>`${H.name()}, who passed Level II, writes "Chartered Financial Analyst (Level II)" on a business card.`,'There is no partial designation; misrepresenting the CFA designation is prohibited.']]
+};
+Object.entries(ETH_SC).forEach(([r,list])=>bx('eth-'+r,10,+r,'Ethics scenario · '+subjName(10,+r),'Identify the Standard most directly involved',H=>{
+  const[code,txt,why]=H.pick(list),others=H.sh(Object.keys(ETH_STD).filter(k=>k!==code)).slice(0,2);
+  return{q:`${txt(H)}<br><br>${H.say('Which Standard is <i>most directly</i> relevant?','This conduct most likely relates to which Standard?','Which Standard of Professional Conduct is most directly involved?')}`,
+    c:ETH_STD[code],w:others.map(k=>ETH_STD[k]),e:bxStep(`<b>${ETH_STD[code]}</b>`,why)}}));
+function subjName(s,r){return CURR[s-1].r[r-1]}
+
 
 /* ---------- question bank & notes index ---------- */
 let QB=[],QID={},QBY={},NOTE={},RAWNOTE={},PERSO=null,PDX=null;
@@ -527,11 +997,15 @@ function rappelFor(q){
   const n=noteOf(q.s,q.r);if(!n||!n.los)return'';const L=losLetter(q.los);const x=L&&n.los.find(l=>l.code===L);
   return x?`LOS ${q.r}${L} · ${x.title}\n${x.rappel}`:'';
 }
+const mkQID=()=>new Proxy({},{get:(o,k)=>{if(typeof k==='string'&&!(k in o)&&k.startsWith('bx.')&&k.includes('~')){const v=bonusInst(k);if(v)o[k]=v}return o[k]}});
+const pk=id=>String(id).split('~')[0]; // progress is tracked per bonus template, not per numeric variant
+const plain=s=>String(s||'').replace(/<br\s*\/?>/g,' ').replace(/<[^>]+>/g,'').replace(/&[a-z#0-9]+;/gi,' ');
 function indexAll(){
-  QB=[];QID={};QBY={};NOTE={};RAWNOTE={};
+  QB=[];QID=mkQID();QBY={};NOTE={};RAWNOTE={};
   CURR.forEach(c=>{QBY[c.id]={};c.r.forEach((_,i)=>QBY[c.id][i+1]=[])});
   const add=o=>{if(!QBY[o.s]||!QBY[o.s][o.r]||QID[o.id])return;QB.push(o);QID[o.id]=o;QBY[o.s][o.r].push(o)};
   if(PDX)Object.entries(PDX.subj).forEach(([s,v])=>{s=+s;if(v.qa)(PDX.qa[v.qa]||[]).forEach(q=>{const L=losLetter(q.los);add({s,r:q.r,src:'ap',id:'ap'+s+'.'+q.n,q:q.q,o:q.o,a:q.a,e:q.e,los:q.los,d:0,t:'Q.'+q.n+(L?' · LOS '+q.r+L:''),pf:v.qa,pq:q})})});
+  BONUS.forEach(T=>add({id:T.id,s:T.s,r:T.r,src:'bonus',gen:1,t:'Bonus · '+T.t,f:T.f,q:T.t,o:['','',''],a:0,e:'',d:0}));
   if(!mineOnly()){
     RAW.forEach(f=>{const s=f.subject,cnt={};f.questions.forEach(q=>{cnt[q.r]=(cnt[q.r]||0)+1;add(Object.assign({},q,{s,src:'own',id:s+'.'+q.r+'.'+cnt[q.r]}))})});
     NOTES_RAW.forEach(f=>{NOTE[f.subject]=NOTE[f.subject]||{};f.notes.forEach(n=>NOTE[f.subject][n.r]=n)});
@@ -750,7 +1224,18 @@ async function nbPage(page,y0,y1,M){
     if(l.k!=='g'&&!/^Learning Module/.test(l.t)&&colored(l.top-1,l.bot+1)>.03)l.k='g';
     if(l.k==='p'&&l.x0>M+12){let ink=0;const r0=Math.round((l.top-y0)*sc),r1=Math.round((l.bot-y0)*sc);for(let y=Math.max(0,r0);y<Math.min(cv.height,r1);y++)for(let x=Math.round((M-2)*sc);x<Math.round((l.x0-3)*sc);x++){const j=(y*CW+x)*4;if(px[j]<160)ink++}
       if(ink>4&&ink<60*sc*sc){l.k='li';l.vb=1}}});
-  L.forEach((l,i)=>{const pv=L[i-1];if(l.k!=='g'||!pv||(pv.k!=='p'&&pv.k!=='li'))return; // wrapped line of an indented item
+  /* fraction bars and table rules are vector strokes: thin horizontal dark runs that no glyph covers */
+  const dark=(x,y)=>{if(y<0||y>=cv.height)return false;const j=(y*CW+x)*4;return px[j]<150&&px[j+1]<150&&px[j+2]<150};
+  const its=L.flatMap(l=>l.items.filter(o=>!o.v)),segs=[],minL=Math.round(7*sc),th=Math.max(2,Math.round(1.8*sc));
+  for(let y=0;y<cv.height;y++){let run=0;for(let x=0;x<=CW;x++){if(x<CW&&dark(x,y)){run++;continue}
+    if(run>=minL){const xm=x-(run>>1);if(!dark(xm,y-th)&&!dark(xm,y+th)){const s={y:y0+y/sc,x0:(x-run)/sc,x1:x/sc},mx=(s.x0+s.x1)/2;
+      if(!its.some(o=>mx>=o.x&&mx<=o.x+o.w&&s.y>=o.top-1&&s.y<=o.bot+1))segs.push(s)}}run=0}}
+  /* inline fraction typeset as small numerator/denominator runs (e.g. "CV = 0.186/1.30 = 0.143") */
+  L.forEach(l=>{if(l.k!=='p'&&l.k!=='li')return;const it=l.items;
+    const stacked=it.some(o=>!o.v&&Math.abs(o.base-l.base)>.35*l.sz&&/\w/.test(o.s))||it.some(a=>a.v==='sup'&&it.some(b=>b.v==='sub'&&b.x<a.x+a.w&&a.x<b.x+b.w));
+    if(stacked||(/=/.test(l.t)&&it.filter(o=>o.v&&/^\s*[\d.,\-−%]{2,}\s*$/.test(o.s)).length>=2)){l.k='g';l.math=1}});
+  L.forEach(l=>{if((l.k==='p'||l.k==='li')&&segs.some(s=>s.y>=l.top-.7*l.sz&&s.y<=l.bot+.7*l.sz&&s.x1>l.x0-2&&s.x0<l.x1+2)){l.k='g';l.math=1}});
+  L.forEach((l,i)=>{const pv=L[i-1];if(l.k!=='g'||l.math||!pv||(pv.k!=='p'&&pv.k!=='li'))return; // wrapped line of an indented item
     const xs=pv.items.slice(0,3).map(o=>o.x).concat(pv.x0);
     if(l.sz>=8.6&&l.sz<11.2&&l.gap<l.sz*2.2&&l.top-pv.bot<l.sz*1.3&&xs.some(x=>Math.abs(l.x0-x)<12)&&colored(l.top-1,l.bot+1)<=.03)l.k='p'});
   const out=[];let prevBot=y0,gfx=false;
@@ -818,6 +1303,8 @@ async function hydrateNotebook(){
     if(el.dataset.next)setTimeout(()=>nbBuild(el.dataset.f,JSON.parse(el.dataset.next)).catch(()=>{}),400); // next LOS ready when the reader gets there
   }catch(e){el.innerHTML='<p class="muted">Could not rebuild this section. Switch to the PDF view.</p>'}
 }
+const losOf=q=>q&&q.src==='ap'?losLetter(q.los):null;
+function noteHref(q){const L=losOf(q),pn=pdfNote(q.s,q.r);if(pn&&L){const i=pn.m.los.findIndex(l=>!l.std&&l.c===L);if(i>=0)return`#note-${q.s}-${q.r}-${i+1}`}return`#note-${q.s}-${q.r}`}
 const isPdfQ=q=>!!(q&&q.pf&&PDX&&PDX.files[q.pf]);
 function secRegion(f,m,k){
   const L=m.los,h=PDX.files[f].h;if(!L.length)return m;
@@ -827,9 +1314,19 @@ function secRegion(f,m,k){
 }
 const secLabel=(r,l)=>l.std?'Standard '+l.c:'LOS '+r+l.c;
 const pdfNote=(s,r)=>{const f=PDX&&PDX.subj[s]&&PDX.subj[s].notes;const m=f&&PDX.notes[f]&&PDX.notes[f][r];return m?{f,m}:null};
-const stemHtml=q=>isPdfQ(q)?`<div class="stem pdfq">${pdfBand(q.pf,q.pq.st)}</div>`:`<div class="stem">${esc(q.q)}</div>`;
-const optBody=(q,k)=>isPdfQ(q)?pdfBand(q.pf,q.pq.op[k],q.pq.op[k].x0):`<span>${esc(q.o[k])}</span>`;
-const explBody=q=>isPdfQ(q)?pdfBand(q.pf,q.pq.ex):esc(q.e);
+const qx=(q,R,kind,fb)=>`<div class="qx nbdoc ${kind}" data-f="${q.pf}" data-kind="${kind}" data-reg="${esc(JSON.stringify(R))}">${fb}</div>`;
+const stemHtml=q=>q.h?`<div class="stem bxq">${q.q}</div>`:isPdfQ(q)?`<div class="stem rich">${qx(q,q.pq.st,'qst',`<p>${esc(q.q)}</p>`)}</div>`:`<div class="stem">${esc(q.q)}</div>`;
+const optBody=(q,k)=>q.h?`<span class="otx">${q.o[k]}</span>`:isPdfQ(q)?`<span class="otx">${qx(q,q.pq.op[k],'qop',esc(q.o[k]))}</span>`:`<span class="otx">${esc(q.o[k])}</span>`;
+const explBody=q=>q.h?`<div class="bxe">${q.e}</div>`:isPdfQ(q)?qx(q,q.pq.ex,'qex',`<p>${esc(q.e)}</p>`):esc(q.e);
+async function hydrateQ(){
+  for(const el of document.querySelectorAll('.qx[data-reg]:not([data-done])')){el.dataset.done='1';
+    nbBuild(el.dataset.f,JSON.parse(el.dataset.reg)).then(res=>{if(!el.isConnected)return;let h=res.html;const k=el.dataset.kind;
+      if(k==='qst')h=h.replace(/^(<p[^>]*>)\s*(<b>)?Q\.\d+\s*(<\/b>)?\s*/,'$1');
+      if(k==='qop')h=h.replace(/<span class="mk">[^<]*<\/span>/,'').replace(/^(<p[^>]*>)\s*(<b>)?[ABC]\.\s*(<\/b>)?\s*/,'$1');
+      if(k==='qex')h=h.replace(/^\s*<p[^>]*>(?:(?!<\/p>).)*?The correct answer is(?:(?!<\/p>).)*<\/p>/,'').replace(/^\s*<p[^>]*>\s*(<b>)?[ABC]\.?\s*(<\/b>)?\s*<\/p>/,'').replace(/<p>(<b>Level (I|1)\b[\s\S]*)$/,'<div class="qref"><p>$1</div>');
+      if(!h.trim())return;el.innerHTML=h;el.querySelectorAll('figure[data-fig]').forEach(fg=>{const src=res.figs[+fg.dataset.fig];const c=document.createElement('canvas');c.width=src.width;c.height=src.height;c.getContext('2d').drawImage(src,0,0);fg.appendChild(c)})}).catch(()=>{})}
+  if(route()==='quiz'&&Q){const nx=Q.items[Q.i+1],q=nx&&QID[nx.id];if(isPdfQ(q))setTimeout(()=>{[q.pq.st,...q.pq.op,q.pq.ex].forEach(R=>nbBuild(q.pf,R).catch(()=>{}))},300)} // next question ready in advance
+}
 
 /* ---------- state & persistence ---------- */
 /* MODE 'artifact' = claude.ai page (db + Claude tutor); 'web' = public site with username/password accounts (Supabase) */
@@ -1014,7 +1511,7 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 function level(acc,att){if(acc==null||!att)return{c:'',l:'Not started'};if(acc>=.75)return{c:'good',l:'Mastered'};if(acc>=.6)return{c:'warn',l:'Shaky'};return{c:'crit',l:'Needs work'}}
 const chip=(acc,att)=>{const v=level(acc,att);return`<span class="chip ${v.c}"><i></i>${v.l}</span>`};
 const qbin=acc=>acc==null?-1:acc<.4?1:acc<.6?2:acc<.75?3:acc<.9?4:5;
-const srcChip=q=>q.src==='ap'?'<span class="srcchip ap">AnalystPrep</span>':'<span class="srcchip">QCM Lab</span>';
+const srcChip=q=>q.src==='bonus'?'<span class="srcchip bonus">Bonus</span>':q.src==='ap'?'<span class="srcchip ap">AnalystPrep</span>':'<span class="srcchip">QCM Lab</span>';
 
 /* ---------- stats ---------- */
 function rStats(s,r){
@@ -1036,12 +1533,16 @@ function streak(){const d=new Date();let n=0;if(!S.meta.daily[dkey(d)])d.setDate
 function daysTo(iso){if(!iso)return null;const t=new Date(iso+'T00:00:00');const n=new Date();n.setHours(0,0,0,0);return Math.round((t-n)/864e5)}
 
 /* ---------- recording ---------- */
+const SRS=[1,3,7,16,35,80];
+const dayNum=()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5);
+const isDue=p=>!!(p&&p.n&&p.du!=null&&p.du<=dayNum());
 function record(id,correct){
-  const p=S.prog[id]||(S.prog[id]={n:0,c:0});
+  id=pk(id);const p=S.prog[id]||(S.prog[id]={n:0,c:0});
   p.n++;if(correct)p.c++;p.l=correct?1:0;p.ts=Date.now();
+  p.iv=correct?Math.min(SRS.length-1,(p.iv==null||p.iv<0?-1:p.iv)+1):-1;p.du=dayNum()+(correct?SRS[p.iv]:1);
   const d=today();S.meta.daily[d]=(S.meta.daily[d]||0)+1;
 }
-function toggleFlag(id){const p=S.prog[id]||(S.prog[id]={n:0,c:0});p.f=!p.f;if(!p.f&&!p.n)delete S.prog[id];touch('prog');return!!(S.prog[id]&&S.prog[id].f)}
+function toggleFlag(id){id=pk(id);const p=S.prog[id]||(S.prog[id]={n:0,c:0});p.f=!p.f;if(!p.f&&!p.n)delete S.prog[id];touch('prog');return!!(S.prog[id]&&S.prog[id].f)}
 
 /* ---------- quiz engine ---------- */
 let Q=lsGet(LS_ACTIVE);
@@ -1050,9 +1551,10 @@ const SEL=new Set(UI.sel);
 function saveUI(){UI.sel=[...SEL];lsSet(LS_UI,UI)}
 function passes(q,f){
   f=f||UI;if(q.d&&!f.diff.includes(q.d))return false;
-  if(f.src&&f.src!=='all'&&q.src!==f.src&&!mineOnly())return false;
+  let sf=f.src||'all';if(sf==='own'&&mineOnly())sf='all';
+  if(sf==='all'){if(q.src==='bonus')return false}else if(sf!=='mix'&&q.src!==sf)return false;
   const p=S.prog[q.id];
-  switch(f.status){case'new':return!(p&&p.n);case'wrong':return!!(p&&p.n&&!p.l);case'flag':return!!(p&&p.f);case'todo':return!(p&&p.n&&p.l);default:return true}
+  switch(f.status){case'due':return isDue(p);case'new':return!(p&&p.n);case'wrong':return!!(p&&p.n&&!p.l);case'flag':return!!(p&&p.f);case'todo':return!(p&&p.n&&p.l);default:return true}
 }
 const ALLF={status:'all',diff:[1,2,3],src:'all'};
 function pool(keys,f){const out=[];keys.forEach(k=>{const[s,r]=k.split('-').map(Number);(QBY[s]&&QBY[s][r]||[]).forEach(q=>{if(passes(q,f))out.push(q)})});return out}
@@ -1072,13 +1574,14 @@ function pickWeighted(list,n){
   return shuffle(out.slice(0,n));
 }
 function startQuiz(qs,opt){
+  qs=(qs||[]).map(q=>q&&(q.gen||q.tpl)?newBonus(q.gen?q.id:q.tpl):q).filter(Boolean);
   if(!qs.length){toast('No question matches this selection.');return}
   Q={id:Date.now().toString(36),items:qs.map(q=>({id:q.id,ch:null,done:false,t:0})),i:0,mode:opt.mode||'practice',label:opt.label||'Quiz',keys:opt.keys||[],start:Date.now(),qStart:Date.now(),limit:opt.mode==='exam'?qs.length*(+S.meta.settings.examSecs||90):0};
   lsSet(LS_ACTIVE,Q);go('quiz');
 }
 function startSim(n){
   const keys=SEL.size&&route()==='builder'?[...SEL]:CURR.flatMap(c=>c.r.map((_,i)=>c.id+'-'+(i+1)));
-  const list=pool(keys,{status:'all',diff:[1,2,3],src:UI.src||'all'});
+  const list=pool(keys,{status:'all',diff:[1,2,3],src:'all'});
   startQuiz(pickWeighted(list,n),{mode:'exam',label:`CFA simulation · ${n} questions`,keys});
 }
 function finishQuiz(){
@@ -1093,7 +1596,7 @@ function finishQuiz(){
 }
 
 /* ---------- views ---------- */
-const NAV=[['dashboard','Dashboard'],['notes','Study notes'],['subjects','Subjects'],['builder','Build a quiz'],['review','Review'],['history','History'],['settings','Settings']];
+const NAV=[['dashboard','Dashboard'],['notes','Study notes'],['subjects','Subjects'],['builder','Build a quiz'],['bonus','Bonus drills'],['review','Review'],['history','History'],['settings','Settings']];
 function route(){return(location.hash||'#dashboard').slice(1)||'dashboard'}
 function go(h){if(location.hash==='#'+h)render();else location.hash=h}
 function renderNav(cur){
@@ -1112,7 +1615,7 @@ function viewFor(r){
   if(r.startsWith('subject-'))return vSubject(+r.split('-')[1]);
   if(r.startsWith('session-'))return vSession(r.slice(8));
   if(r.startsWith('note-')){const[,s,rr,k]=r.split('-');return vNote(+s,+rr,+(k||1))}
-  return({notes:vNotes,dashboard:vDash,subjects:vSubjects,builder:vBuilder,review:vReview,history:vHistory,settings:vSettings}[r]||vDash)();
+  return({bonus:vBonus,notes:vNotes,dashboard:vDash,subjects:vSubjects,builder:vBuilder,review:vReview,history:vHistory,settings:vSettings}[r]||vDash)();
 }
 function vResume(){const done=Q.items.filter(i=>i.done||i.ch!=null).length;return`<div class="countdown" style="margin-bottom:18px"><span>Quiz in progress: <b>${esc(Q.label)}</b> · ${done}/${Q.items.length}</span><a class="btn primary sm" href="#quiz">Resume</a><button class="btn ghost sm" data-act="abandon">Discard</button></div>`}
 const simBlock=()=>`<div class="sim">${[10,30,60].map(n=>`<button data-act="sim" data-n="${n}"><b>${n}</b><span>${fmtDur(n*(+S.meta.settings.examSecs||90))} timed</span></button>`).join('')}</div>`;
@@ -1129,6 +1632,7 @@ function vDash(){
    <div class="kpi"><p class="eyebrow">Questions done</p><div class="v">${g.att}<small> / ${g.total}</small></div><div class="l">${g.ok} correct on last attempt</div></div>
    <div class="kpi"><p class="eyebrow">Readings</p><div class="v">${g.started}<small> / ${g.nread}</small></div><div class="l">practised · ${readN} study notes read</div></div>
    <div class="kpi"><p class="eyebrow">Streak</p><div class="v">${st}<small> ${st===1?'day':'days'}</small></div><div class="l">${todayN?'You studied today':'Answer one question today'}</div></div></div>`;
+  h+=todayPlan();
   h+=`<section class="panel"><div class="panel-head"><h2>CFA exam simulation</h2><span class="small muted">Whole curriculum, topics weighted like the real exam, 90 s per question, corrected at the end</span></div>${simBlock()}</section>`;
   h+=`<section class="panel"><div class="panel-head"><h2>Score by topic</h2><span class="small muted">Bar: accuracy · tick: ${pct(MPS)} pass mark · grey line: coverage</span></div><div>`;
   CURR.forEach(c=>{const x=sStats(c.id);h+=`<a class="srow" href="#subject-${c.id}"><div class="sname">${esc(c.name)}<small>${c.code} · ${c.w[0]}–${c.w[1]}% of exam · ${x.att}/${x.total} questions</small></div><div class="sbar"><div class="bar"><i style="width:${(x.acc||0)*100}%"></i><span class="mps" style="left:${MPS*100}%"></span></div><div class="bar cov"><i style="width:${x.cov*100}%"></i></div></div><div class="chipcell">${chip(x.acc,x.att)}</div><div class="score">${pct(x.acc)}</div></a>`});
@@ -1138,6 +1642,21 @@ function vDash(){
   h+=`<div class="grid2"><section class="panel"><div class="panel-head"><h2>Weak spots</h2><span class="small muted">Readings under 75% (3+ answers)</span></div>${weak.length?`<div class="list">${weak.slice(0,6).map(w=>`<div class="li"><div class="t"><b>${esc(w.t)}</b><span>${w.c.code} · R${w.r} · ${pct(w.x.acc)} on ${w.x.att} answers</span></div><button class="btn sm" data-act="quizKeys" data-keys="${w.c.id}-${w.r}" data-label="${esc(w.c.code+' R'+w.r)}">Practise</button></div>`).join('')}</div>${weak.length>1?`<div class="row" style="margin-top:12px"><button class="btn sm primary" data-act="quizKeys" data-keys="${weak.slice(0,6).map(w=>w.c.id+'-'+w.r).join(',')}" data-label="Weak spots">Quiz on these ${Math.min(6,weak.length)} readings</button></div>`:''}`:`<div class="empty">Nothing yet. Readings where you score under 75% show up here after 3 answers.</div>`}</section>
    <section class="panel"><div class="panel-head"><h2>Recent sessions</h2><a class="small" href="#history">Full history</a></div>${S.sessions.length?`<div class="list">${S.sessions.slice(0,6).map(sessLi).join('')}</div>`:`<div class="empty">No session yet. <a href="#builder">Build your first quiz</a>: pick the readings of your mock exam, the number of questions, and go.</div>`}</section></div></div>`;
   return h;
+}
+function nextLos(){
+  for(const c of CURR)for(let r=1;r<=c.r.length;r++){const pn=pdfNote(c.id,r);if(!pn)continue;const n=pn.m.los.length||1,d=losDone(c.id,r);
+    if(d.length<n){const k=Array.from({length:n},(_,i)=>i+1).find(i=>!d.includes(i));const l=pn.m.los[k-1];return{h:`#note-${c.id}-${r}-${k}`,lab:`${c.code} R${r}${l?' · '+secLabel(r,l):''}`,t:l?l.t:c.r[r-1]}}}
+  return null;
+}
+function todayPlan(){
+  const due=QB.filter(q=>isDue(S.prog[q.id])).length,unseen=QB.filter(q=>q.src!=='bonus'&&!(S.prog[q.id]&&S.prog[q.id].n)).length;
+  const dE=daysTo(S.meta.settings.examDate),per=dE&&dE>0?Math.ceil(unseen/Math.max(1,dE-21)):20,done=S.meta.daily[today()]||0,nl=nextLos();
+  return`<section class="panel today"><div class="panel-head"><h2>Today's plan</h2><span class="small muted">${dE&&dE>0?`${dE} days to the exam · last 3 weeks kept for mocks and review`:'Set your exam date in Settings for a paced plan'}</span></div><div class="tplan">
+   <div class="tcard"><p class="eyebrow">Spaced review</p><b>${due}</b><span>question${due===1?'':'s'} due today — answered right, they come back after 1, 3, 7, 16, 35 then 80 days; missed ones return tomorrow.</span><button class="btn ${due?'primary':''}" data-act="dueQuiz" ${due?'':'disabled'}>Review ${Math.min(due,40)||''} due</button></div>
+   <div class="tcard"><p class="eyebrow">New questions</p><b>${Math.min(done,per)}<small> / ${per}</small></b><span>${unseen} unseen questions left${dE&&dE>0?' at this pace':''}.</span><button class="btn" data-act="newQuiz" data-n="${Math.max(10,Math.min(30,per))}">Start ${Math.max(10,Math.min(30,per))} new</button></div>
+   <div class="tcard"><p class="eyebrow">Continue reading</p>${nl?`<b class="tl">${esc(nl.lab)}</b><span>${esc(nl.t)}</span><a class="btn" href="${nl.h}">Open the notes</a>`:`<b class="tl">${hasPdx()?'All read':'—'}</b><span>${hasPdx()?'Every LOS is marked as read.':'Add your AnalystPrep PDFs to follow the notes LOS by LOS.'}</span><a class="btn" href="#${hasPdx()?'notes':'settings'}">${hasPdx()?'Study notes':'Add PDFs'}</a>`}</div>
+   <div class="tcard"><p class="eyebrow">Bonus drill</p><b>${BONUS.length}</b><span>formula and scenario drills with new numbers every time.</span><button class="btn" data-act="bonusDrill" data-n="10">10 mixed drills</button></div>
+  </div></section>`;
 }
 function sessLi(s){return`<a class="li" href="#session-${s.id}" style="text-decoration:none;color:inherit"><div class="t"><b>${esc(s.label)}</b><span>${fmtDT(s.ts)} · ${s.mode==='exam'?'Timed':'Practice'} · ${s.n} questions · ${fmtDur((s.end-s.ts)/1000)}</span></div><span class="score">${s.ok}/${s.n} <small>${pct(s.n?s.ok/s.n:0)}</small></span></a>`}
 function heatmap(){
@@ -1163,6 +1682,17 @@ function spark(){
    ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?5:3}" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" data-tip="${esc(ss[i].label+' · '+fmtD(ss[i].ts)+' · '+ss[i].ok+'/'+ss[i].n)}"/>`).join('')}</svg>`;
 }
 
+function bStats(T){const p=S.prog[T.id];return p&&p.n?{n:p.n,acc:p.c/p.n}:{n:0,acc:null}}
+function vBonus(){
+  const weak=BONUS.filter(T=>{const x=bStats(T);return x.n&&x.acc<.7});
+  let h=`<header class="page-head"><div><p class="eyebrow">${BONUS.length} original drills · new numbers, names and wording every time</p><h1>Bonus drills</h1></div><div class="row">${weak.length?`<button class="btn" data-act="bonusDrill" data-n="10" data-weak="1">Weakest drills (${weak.length})</button>`:''}<button class="btn" data-act="bonusDrill" data-n="10">10 mixed</button><button class="btn primary" data-act="bonusDrill" data-n="20">20 mixed</button></div></header>
+  <p class="small muted" style="margin:-8px 0 18px;max-width:80ch">Written for this site (not AnalystPrep): every draw rebuilds the question with fresh figures and distractors taken from classic mistakes, and the correction shows each step. Ideal to make formulas automatic.</p><div class="stack">`;
+  CURR.forEach(c=>{const L=BONUS.filter(T=>T.s===c.id);if(!L.length)return;
+    h+=`<section class="panel"><div class="panel-head"><h2>${esc(c.name)} <span class="mono small muted">${c.code}</span></h2><button class="btn sm" data-act="bonusDrill" data-n="10" data-s="${c.id}">10 from this topic</button></div><div class="blist">`;
+    L.forEach(T=>{const x=bStats(T);h+=`<div class="brow"><div class="bt"><b>${esc(T.t)}</b><code>${esc(T.f)}</code><span class="small muted">R${T.r} · ${esc(c.r[T.r-1])}</span></div><div class="bs">${x.n?`${chip(x.acc,x.n)}<span class="mono small">${pct(x.acc)} · ${x.n}×</span>`:'<span class="small muted">not tried</span>'}</div><button class="btn sm" data-act="bonusDrill" data-id="${T.id}" data-n="5">Practise ×5</button></div>`});
+    h+='</div></section>'});
+  return h+'</div>';
+}
 function vSubjects(){
   let h=`<header class="page-head"><div><p class="eyebrow">10 topics · ${CURR.reduce((a,c)=>a+c.r.length,0)} readings · ${QB.length} questions</p><h1>Subjects</h1></div></header><div class="cards">`;
   CURR.forEach(c=>{const x=sStats(c.id);h+=`<a class="card" href="#subject-${c.id}"><div class="top"><div><div class="code">${c.code} · ${c.w[0]}–${c.w[1]}%</div><h3>${esc(c.name)}</h3></div>${chip(x.acc,x.att)}</div><div class="big">${pct(x.acc)}<small> accuracy</small></div><div><div class="bar"><i style="width:${(x.acc||0)*100}%"></i><span class="mps" style="left:${MPS*100}%"></span></div><div class="bar cov"><i style="width:${x.cov*100}%"></i></div></div><div class="small muted">${x.att}/${x.total} questions · ${x.started}/${c.r.length} readings practised${x.ap?' · '+x.ap+' AnalystPrep':''}</div></a>`});
@@ -1186,8 +1716,8 @@ function vBuilder(){
     h+='</details>'});
   h+=`</div></section><aside class="side"><section class="panel stack" style="gap:16px">
    <div><p class="eyebrow">Available questions</p><div class="avail">${avail}</div><div class="small muted">${plural(SEL.size,'reading')} selected</div></div>
-   ${mineOnly()?'':`<div class="field"><span class="lbl">Source</span><div class="seg">${[['all','All'],['ap','AnalystPrep'],['own','QCM Lab']].map(([k,l])=>`<button data-act="setSrc" data-v="${k}" class="${UI.src===k?'on':''}">${l}</button>`).join('')}</div>${PERSO||hasPdx()?'':'<span class="small muted">Add your AnalystPrep PDFs in Settings to get their questions.</span>'}</div>`}
-   <div class="field"><span class="lbl">Questions</span><div class="seg">${[['all','All'],['new','Unseen'],['todo','Not mastered'],['wrong','Missed'],['flag','Flagged']].map(([k,l])=>`<button data-act="setStatus" data-v="${k}" class="${UI.status===k?'on':''}">${l}</button>`).join('')}</div></div>
+   ${`<div class="field"><span class="lbl">Source</span><div class="seg">${(mineOnly()?[['all','AnalystPrep'],['bonus','Bonus'],['mix','Both']]:[['all','All'],['ap','AnalystPrep'],['own','QCM Lab'],['bonus','Bonus']]).map(([k,l])=>`<button data-act="setSrc" data-v="${k}" class="${UI.src===k?'on':''}">${l}</button>`).join('')}</div>${PERSO||hasPdx()?'':'<span class="small muted">Add your AnalystPrep PDFs in Settings to get their questions.</span>'}</div>`}
+   <div class="field"><span class="lbl">Questions</span><div class="seg">${[['all','All'],['new','Unseen'],['due','Due today'],['todo','Not mastered'],['wrong','Missed'],['flag','Flagged']].map(([k,l])=>`<button data-act="setStatus" data-v="${k}" class="${UI.status===k?'on':''}">${l}</button>`).join('')}</div></div>
    <div class="field"><span class="lbl">Difficulty (QCM Lab questions)</span><div class="seg">${[[1,'Easy'],[2,'Medium'],[3,'Hard']].map(([k,l])=>`<button data-act="setDiff" data-v="${k}" class="${UI.diff.includes(k)?'on':''}">${l}</button>`).join('')}</div></div>
    <div class="field"><label for="count">Number of questions: <span class="mono" id="countv">${UI.count}</span></label><input type="range" id="count" min="5" max="${Math.max(5,Math.min(180,avail))}" step="1" value="${Math.min(UI.count,Math.max(5,Math.min(180,avail)))}"></div>
    <div class="field"><span class="lbl">Mode</span><div class="seg"><button data-act="setMode" data-v="practice" class="${UI.mode==='practice'?'on':''}">Practice</button><button data-act="setMode" data-v="exam" class="${UI.mode==='exam'?'on':''}">Timed exam</button></div><span class="small muted">${UI.mode==='exam'?'Corrected at the end, '+(+set.examSecs||90)+' s per question like exam day.':'Answer, explanation and course reminder after each question.'}</span></div>
@@ -1204,20 +1734,20 @@ function vQuiz(){
   const it=Q.items[Q.i],q=QID[it.id];
   if(!q)return`<div class="empty">This question is not available in this browser (AnalystPrep data not imported here). <button class="btn sm" data-act="next">Skip</button> <button class="btn sm" data-act="abandon">Discard quiz</button></div>`;
   const c=subj(q.s),exam=Q.mode==='exam',n=Q.items.length;const answered=Q.items.filter(x=>exam?x.ch!=null:x.done).length;
-  const p=S.prog[q.id]||{};const done=!exam&&it.done;
+  const p=S.prog[pk(q.id)]||{};const done=!exam&&it.done;
   let h=`<div class="player"><div class="ptop"><div class="lbl"><b>${esc(Q.label)}</b> · ${exam?'Timed':'Practice'} · question <span class="mono">${Q.i+1}/${n}</span></div><div class="row"><span class="timer" id="timer">0:00</span><button class="btn sm flag ${p.f?'on':''}" data-act="flag" title="Flag (F)">⚑ ${p.f?'Flagged':'Flag'}</button><button class="btn sm" data-act="finish">${exam?'Submit':'Finish'}</button></div></div>
   <div class="prog"><i style="width:${answered/n*100}%"></i></div>
   <article class="qcard"><div class="qmeta"><span><b>${c.code} · R${q.r}</b> ${esc(c.r[q.r-1])}</span><span>${srcChip(q)} ${esc(q.t||'')}${q.d?` · <span class="dots" aria-label="difficulty ${q.d}">${'●'.repeat(q.d)}${'○'.repeat(3-q.d)}</span>`:''}${p.n?` · seen ${p.n}× (${p.c} correct)`:''}</span></div>
   ${stemHtml(q)}<div class="opts">`;
-  q.o.forEach((o,k)=>{let cls='',mk='';if(done){if(k===q.a){cls='good';mk='Correct answer'}else if(k===it.ch){cls='bad';mk='Your answer'}}else if(it.ch===k)cls='sel';h+=`<button class="opt ${cls} ${isPdfQ(q)?'pdfo':''}" data-act="choose" data-k="${k}" ${done?'disabled':''}><span class="k">${LET[k]}</span>${optBody(q,k)}<span class="mk">${mk}</span></button>`});
+  q.o.forEach((o,k)=>{let cls='',mk='';if(done){if(k===q.a){cls='good';mk='Correct answer'}else if(k===it.ch){cls='bad';mk='Your answer'}}else if(it.ch===k)cls='sel';h+=`<button class="opt ${cls}" data-act="choose" data-k="${k}" ${done?'disabled':''}><span class="k">${LET[k]}</span>${optBody(q,k)}<span class="mk">${mk}</span></button>`});
   h+='</div>';
-  if(done){const ok=it.ch===q.a,rp=rappelFor(q);h+=`<div class="expl ${isPdfQ(q)?'pdfx':''}"><b class="verdict ${ok?'ok':'ko'}">${ok?'Correct':'Incorrect — the answer is '+LET[q.a]}</b>${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${q.id}" data-ch="${it.ch}">✦ Ask Claude</button><a class="btn sm ghost" href="#note-${q.s}-${q.r}">Open the study notes</a></div>`}
+  if(done){const ok=it.ch===q.a,rp=rappelFor(q);h+=`<div class="expl ${isPdfQ(q)?'pdfx':''}"><b class="verdict ${ok?'ok':'ko'}">${ok?'Correct':'Incorrect — the answer is '+LET[q.a]}</b>${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${q.id}" data-ch="${it.ch}">✦ Ask Claude</button><button class="btn sm" data-act="aiVariant" data-id="${q.id}">✦ Similar question</button><a class="btn sm ghost" href="${noteHref(q)}">Study notes${losOf(q)?' · LOS '+q.r+losOf(q):''} →</a></div><div id="aivar" class="aivar" hidden></div>`}
   h+=`<div class="pact"><span class="small muted"><span class="kbd">A</span> <span class="kbd">B</span> <span class="kbd">C</span> choose · <span class="kbd">Enter</span> ${exam?'next':'check / next'} · <span class="kbd">F</span> flag${exam?' · <span class="kbd">←</span> <span class="kbd">→</span> navigate':''}</span><div class="row">`;
   if(exam)h+=`<button class="btn" data-act="prev" ${Q.i?'':'disabled'}>Previous</button>${Q.i<n-1?`<button class="btn primary" data-act="next">Next</button>`:`<button class="btn primary" data-act="finish">Submit</button>`}`;
   else if(!done)h+=`<button class="btn primary" data-act="validate" ${it.ch==null?'disabled':''}>Check answer</button>`;
   else h+=Q.i<n-1?`<button class="btn primary" data-act="next">Next question</button>`:`<button class="btn primary" data-act="finish">See results</button>`;
   h+='</div></div></article>';
-  if(exam)h+=`<section class="panel"><div class="panel-head"><h3>Answer sheet</h3><span class="small muted">${answered}/${n} answered · ⚑ flagged</span></div><div class="navgrid">${Q.items.map((x,i)=>`<button data-act="jump" data-i="${i}" class="${x.ch!=null?'a':''} ${i===Q.i?'cur':''} ${(S.prog[x.id]||{}).f?'f':''}">${i+1}</button>`).join('')}</div></section>`;
+  if(exam)h+=`<section class="panel"><div class="panel-head"><h3>Answer sheet</h3><span class="small muted">${answered}/${n} answered · ⚑ flagged</span></div><div class="navgrid">${Q.items.map((x,i)=>`<button data-act="jump" data-i="${i}" class="${x.ch!=null?'a':''} ${i===Q.i?'cur':''} ${(S.prog[pk(x.id)]||{}).f?'f':''}">${i+1}</button>`).join('')}</div></section>`;
   return h+'</div>';
 }
 
@@ -1233,7 +1763,7 @@ function vSession(id){
   <section class="panel"><div class="panel-head"><h2>By reading</h2></div><div class="tbl-wrap"><table><thead><tr><th>Topic</th><th>Reading</th><th class="n">Score</th><th style="width:30%">Accuracy</th></tr></thead><tbody>${Object.entries(byR).sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true})).map(([k,v])=>{const[si,ri]=k.split('-').map(Number);const c=subj(si);return`<tr class="click" data-act="goto" data-h="subject-${si}"><td class="mono">${c.code}</td><td>R${ri} · ${esc(c.r[ri-1])}</td><td class="n">${v.ok}/${v.n}</td><td><div class="bar"><i style="width:${v.ok/v.n*100}%"></i><span class="mps" style="left:${MPS*100}%"></span></div></td></tr>`}).join('')}</tbody></table></div></section>
   <section class="panel"><div class="panel-head"><h2>Answers</h2><div class="seg" style="width:auto"><button class="on" data-act="rvFilter" data-v="all">All (${s.n})</button><button data-act="rvFilter" data-v="ko">Mistakes (${wrongIds.length})</button></div></div><div id="rvlist">`;
   s.items.forEach(([qid,ch,t])=>{const q=QID[qid];if(!q)return;const ok=ch===q.a,c=subj(q.s),rp=rappelFor(q);
-    h+=`<details class="rv" data-ok="${ok?1:0}"><summary><span class="mark ${ch==null?'na':ok?'ok':'ko'}">${ch==null?'–':ok?'✓':'✗'}</span><span style="min-width:0"><span class="mono small muted">${c.code} R${q.r} · </span>${esc(q.q.length>110?q.q.slice(0,110)+'…':q.q)}</span><span class="small muted mono">${t?fmtDur(t):''}</span></summary><div class="body">${stemHtml(q)}<div class="stack" style="gap:6px">${q.o.map((o,k)=>`<div class="ro ${k===q.a?'good':k===ch?'bad':''}"><b class="mono">${LET[k]}</b><span style="flex:1;min-width:0">${isPdfQ(q)?optBody(q,k):esc(o)}${k===q.a?' <b>· correct answer</b>':k===ch?' <b>· your answer</b>':''}</span></div>`).join('')}</div><div class="expl ${isPdfQ(q)?'pdfx':''}">${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${qid}" data-ch="${ch==null?'':ch}">✦ Ask Claude</button><button class="btn sm flag ${(S.prog[qid]||{}).f?'on':''}" data-act="flagId" data-id="${qid}">⚑ ${(S.prog[qid]||{}).f?'Flagged':'Flag'}</button></div></div></details>`});
+    h+=`<details class="rv" data-ok="${ok?1:0}"><summary><span class="mark ${ch==null?'na':ok?'ok':'ko'}">${ch==null?'–':ok?'✓':'✗'}</span><span style="min-width:0"><span class="mono small muted">${c.code} R${q.r} · </span>${esc(plain(q.q).length>110?plain(q.q).slice(0,110)+'…':plain(q.q))}</span><span class="small muted mono">${t?fmtDur(t):''}</span></summary><div class="body">${stemHtml(q)}<div class="stack" style="gap:6px">${q.o.map((o,k)=>`<div class="ro ${k===q.a?'good':k===ch?'bad':''}"><b class="mono">${LET[k]}</b><span style="flex:1;min-width:0">${optBody(q,k)}${k===q.a?' <b>· correct answer</b>':k===ch?' <b>· your answer</b>':''}</span></div>`).join('')}</div><div class="expl ${isPdfQ(q)?'pdfx':''}">${explBody(q)}</div>${rp?`<div class="recall"><b>Course reminder</b>${esc(rp)}</div>`:''}<div class="row"><button class="btn sm" data-act="askQ" data-id="${qid}" data-ch="${ch==null?'':ch}">✦ Ask Claude</button><button class="btn sm flag ${(S.prog[pk(qid)]||{}).f?'on':''}" data-act="flagId" data-id="${qid}">⚑ ${(S.prog[pk(qid)]||{}).f?'Flagged':'Flag'}</button></div></div></details>`});
   return h+'</div></section></div>';
 }
 
@@ -1301,7 +1831,7 @@ function vPdfNote(s,r,k,pn,o){
    <div class="rbody">
     <aside class="rrail">
      <section class="rcard"><p class="eyebrow">${esc(c.code)} · Reading ${r}</p><div class="rring"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(done.length/n*97.4).toFixed(1)} 97.4" transform="rotate(-90 18 18)"/></svg><div><b>${done.length}/${n}</b><span>${n>1?'LOS read':'read'}</span></div></div>
-      <div class="loslinks">${L.map((l,i)=>`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''} ${done.includes(i+1)?'done':''}"><b>${done.includes(i+1)?'✓':code(l)}</b><span>${esc(l.t)}</span></a>`).join('')}</div></section>
+      <div class="loslinks">${L.map((l,i)=>{const a=losAcc(s,r,l);return`<a href="#note-${s}-${r}-${i+1}" class="${i+1===k?'on':''} ${done.includes(i+1)?'done':''}"><b>${done.includes(i+1)?'✓':code(l)}</b><span>${esc(l.t)}${a.att?`<em class="lacc ${a.acc>=.75?'ok':a.acc>=.6?'mid':'ko'}">${pct(a.acc)} on ${a.att} q.</em>`:''}</span></a>`}).join('')}</div>${losQs(s,r,lk).length?`<button class="btn sm" data-act="quizLos" data-s="${s}" data-r="${r}" data-c="${esc(lk.c)}">Quiz on ${esc(lab(lk))} · ${losQs(s,r,lk).length}</button>`:''}</section>
      <section class="rcard"><p class="eyebrow">Status</p><div class="seg">${[['','Not read'],['read','Read'],['reread','Re-read'],['master','Mastered']].map(([v,t])=>`<button data-act="setRead" data-k="${s}-${r}" data-v="${v}" class="${st===v?'on':''}">${t}</button>`).join('')}</div>
       <button class="btn primary" style="justify-content:center" data-act="quizKeys" data-keys="${s}-${r}" data-label="${esc(c.code+' R'+r)}">Quiz on this reading · ${x.total}</button>
       <span class="small muted">Quiz: ${x.att}/${x.total} done${x.acc!=null?' · '+pct(x.acc)+' accuracy':''}</span></section>
@@ -1314,6 +1844,8 @@ function vPdfNote(s,r,k,pn,o){
       <div class="row">${isDone?`<button class="btn ghost" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-off="1">✓ Read · undo</button>`:''}${nxH?`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}" data-go="${nxH}">${esc(nxL)} →</button>`:isDone?'':`<button class="btn primary lg" data-act="losDone" data-s="${s}" data-r="${r}" data-k="${k}">Mark read</button>`}</div></div>
     </article></div></div>`;
 }
+const losQs=(s,r,l)=>l&&l.c&&!l.std?(QBY[s]&&QBY[s][r]||[]).filter(q=>q.src==='ap'&&losLetter(q.los)===l.c):[];
+function losAcc(s,r,l){let att=0,ok=0;losQs(s,r,l).forEach(q=>{const p=S.prog[q.id];if(p&&p.n){att++;if(p.l)ok++}});return{att,acc:att?ok/att:null}}
 const readerLayout=()=>UI.nlayout||(innerWidth>=1500?'two':'one');
 
 function vReview(){
@@ -1362,6 +1894,9 @@ function vSettings(){
 
 /* ---------- Claude tutor ---------- */
 const RULES=MODE==='web'?'(tutor session)':"You are an expert CFA Level I (2027 curriculum) tutor helping a candidate revise. Answer in English, clearly and concisely. Give the formula, the intuition and a small numerical example when it helps. When given a multiple-choice question, explain why the correct answer is right, why each other option is wrong, and the underlying course concept. Formatting: short paragraphs, bullet lists starting with '- ', **bold** for key terms; no headings, no tables, no LaTeX (write formulas in plain text, e.g. ModDur = MacDur / (1 + y)).";
+let AIV=null;
+function renderAiv(){const b=$('#aivar');if(!b||!AIV)return;const d=AIV.ch!=null;
+  b.innerHTML=`<p class="eyebrow">✦ Similar question · AI-generated, not recorded</p><div class="stem">${esc(AIV.q)}</div><div class="opts">${AIV.o.map((o,k)=>`<button class="opt ${d?(k===AIV.a?'good':k===AIV.ch?'bad':''):''}" data-act="aivChoose" data-k="${k}" ${d?'disabled':''}><span class="k">${LET[k]}</span><span>${esc(o)}</span><span class="mk">${d&&k===AIV.a?'Correct answer':d&&k===AIV.ch?'Your answer':''}</span></button>`).join('')}</div>${d?`<div class="expl"><b class="verdict ${AIV.ch===AIV.a?'ok':'ko'}">${AIV.ch===AIV.a?'Correct':'Incorrect — the answer is '+LET[AIV.a]}</b>${esc(AIV.e||'')}</div>`:''}`}
 const CHAT={turns:[],ctx:null,ctxKind:null,ctxLabel:'',busy:false,ctl:null,sample:undefined};
 /* web mode: same call shape as claude.ai's sample(), served by the ai-tutor Edge Function (OpenRouter) */
 function webSample(){
@@ -1421,7 +1956,7 @@ async function sendAsk(){
     if(e&&['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(e.code))CHAT.sample=null;
   }finally{CHAT.busy=false;CHAT.ctl=null;renderChat()}
 }
-function qContext(qid,ch){const q=QID[qid],c=subj(q.s),rp=rappelFor(q);return{txt:`Multiple-choice question (${c.name}, reading ${q.r} "${c.r[q.r-1]}"${q.los?', LOS '+q.los:''}).\n${q.q}\n${q.o.map((o,k)=>LET[k]+'. '+o).join('\n')}\nCorrect answer: ${LET[q.a]}.${ch!=null?' My answer: '+LET[ch]+'.':''}\nGiven explanation: ${q.e}${rp?'\nCourse reminder: '+rp:''}`.slice(0,6000),label:`${c.code} R${q.r} · ${q.t||''}`}}
+function qContext(qid,ch){const q=QID[qid],c=subj(q.s),rp=rappelFor(q);return{txt:`Multiple-choice question (${c.name}, reading ${q.r} "${c.r[q.r-1]}"${q.los?', LOS '+q.los:''}).\n${plain(q.q)}\n${q.o.map((o,k)=>LET[k]+'. '+plain(o)).join('\n')}\nCorrect answer: ${LET[q.a]}.${ch!=null?' My answer: '+LET[ch]+'.':''}\nGiven explanation: ${plain(q.e)}${rp?'\nCourse reminder: '+rp:''}`.slice(0,6000),label:`${c.code} R${q.r} · ${q.t||''}`}}
 $('#askform').addEventListener('submit',e=>{e.preventDefault();sendAsk()});
 $('#askin').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAsk()}});
 
@@ -1438,7 +1973,7 @@ async function importPerso(file){
 /* ---------- post-render & events ---------- */
 let tick=null;
 function afterRender(r){
-  clearInterval(tick);hydratePdf();hydrateNotebook();
+  clearInterval(tick);hydratePdf();hydrateNotebook();hydrateQ();
   if(r==='quiz'&&Q){Q.qStart=Date.now();const upd=()=>{const el=$('#timer');if(!el||!Q)return;if(Q.mode==='exam'){const left=Q.limit-(Date.now()-Q.start)/1000;el.textContent=fmtDur(left);el.classList.toggle('low',left<60);if(left<=0){toast('Time is up: answers submitted.');finishQuiz()}}else el.textContent=fmtDur((Date.now()-Q.qStart)/1000+(Q.items[Q.i].t||0))};upd();tick=setInterval(upd,1000)}
 }
 function stamp(){if(!Q)return;const it=Q.items[Q.i];if(it&&!(Q.mode!=='exam'&&it.done))it.t=(it.t||0)+(Date.now()-Q.qStart)/1000;Q.qStart=Date.now();lsSet(LS_ACTIVE,Q)}
@@ -1494,6 +2029,20 @@ const ACT={
   redoSame:el=>{const s=S.sessions.find(x=>x.id===el.dataset.id);startQuiz(shuffle(s.items.map(x=>QID[x[0]]).filter(Boolean)),{mode:s.mode,label:s.label,keys:s.keys})},
   reviewQuiz:el=>{const st=el.dataset.st;const qs=QB.filter(q=>{const p=S.prog[q.id];if(!p)return false;const w=p.n&&!p.l;return st==='flag'?p.f:st==='wrong'?w:(w||p.f)});startQuiz(shuffle(qs).slice(0,60),{mode:'practice',label:st==='flag'?'Review · flagged':st==='wrong'?'Review · missed':'Review'})},
   reviewGroup:el=>startQuiz(shuffle(el.dataset.ids.split(',').map(id=>QID[id]).filter(Boolean)),{mode:'practice',label:el.dataset.label}),
+  dueQuiz:()=>{const qs=QB.filter(q=>isDue(S.prog[q.id]));startQuiz(shuffle(qs).slice(0,40),{mode:'practice',label:'Spaced review · due today'})},
+  newQuiz:el=>{const keys=CURR.flatMap(c=>c.r.map((_,i)=>c.id+'-'+(i+1)));const qs=pool(keys,{status:'new',diff:[1,2,3],src:'all'});startQuiz(pickBalanced(qs,+el.dataset.n||20,true),{mode:'practice',label:'New questions'})},
+  bonusDrill:el=>{const n=+el.dataset.n||10;let L=BONUS;if(el.dataset.id)L=[BONUS_BY[el.dataset.id]];else if(el.dataset.s)L=BONUS.filter(T=>T.s===+el.dataset.s);else if(el.dataset.weak)L=BONUS.filter(T=>{const x=bStats(T);return x.n&&x.acc<.7});
+    if(!L.length)return toast('Nothing to practise here yet.');const pick=[];let pool2=shuffle(L);while(pick.length<n){if(!pool2.length)pool2=shuffle(L);pick.push(QID[pool2.pop().id])}
+    startQuiz(pick,{mode:'practice',label:el.dataset.id?'Bonus · '+BONUS_BY[el.dataset.id].t:el.dataset.s?'Bonus · '+subj(+el.dataset.s).code:'Bonus drills'})},
+  quizLos:el=>{const s=+el.dataset.s,r=+el.dataset.r,qs=losQs(s,r,{c:el.dataset.c});startQuiz(shuffle(qs).slice(0,20),{mode:'practice',label:`${subj(s).code} LOS ${r}${el.dataset.c}`,keys:[s+'-'+r]})},
+  aiVariant:async el=>{const q=QID[el.dataset.id],box=$('#aivar');if(!q||!box)return;const sample=await getSample();
+    if(!sample){toast('The AI tutor is not available here.');return}
+    box.hidden=false;box.innerHTML='<div class="nbload"><i></i><i></i><i></i><span>Writing a new question on the same concept…</span></div>';el.disabled=true;
+    const prompt=`Write ONE new CFA Level I multiple-choice question that tests exactly the same concept as the question below, with different numbers, a different scenario and different wording. Exactly three options, one correct, the two others based on classic mistakes. Return ONLY minified JSON, no markdown: {"q":"question text","o":["option A","option B","option C"],"a":<index of the correct option 0-2>,"e":"short step-by-step explanation"}\n\nOriginal question:\n${plain(q.q)}\nOptions: ${q.o.map((o,k)=>LET[k]+'. '+plain(o)).join(' | ')}\nCorrect: ${LET[q.a]}`;
+    try{const r=await sample([{role:'user',content:RULES},{role:'user',content:prompt}],{cache:false});const s=r.text,j=JSON.parse(s.slice(s.indexOf('{'),s.lastIndexOf('}')+1));
+      if(!j.q||!Array.isArray(j.o)||j.o.length!==3||!(j.a>=0&&j.a<=2))throw 0;AIV=j;renderAiv();}
+    catch(e){box.innerHTML=`<p class="small muted">${esc(ASK_ERR[e&&e.code]||'Could not create a variant this time. Try again.')}</p>`}finally{el.disabled=false}},
+  aivChoose:el=>{if(!AIV||AIV.ch!=null)return;AIV.ch=+el.dataset.k;renderAiv()},
   nTone:el=>{UI.tone=el.dataset.v;saveUI();const d=$('#pdfdoc');if(d)d.className='pdfdoc tone-'+UI.tone;el.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===el))},
   nZoom:el=>{UI.nzoom=Math.min(1.6,Math.max(.8,Math.round(((UI.nzoom||1)+(+el.dataset.d)*.1)*10)/10));if(+el.dataset.d>0&&!UI.nfocus&&innerWidth>1020)UI.nfocus=true;saveUI();keepScroll(render)},
   nMode:el=>{UI.nmode=el.dataset.v;saveUI();keepScroll(render)},
