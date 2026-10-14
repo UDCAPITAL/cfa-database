@@ -327,6 +327,7 @@ details.rv .body{padding:4px 2px 18px 32px;display:flex;flex-direction:column;ga
 .auth{position:fixed;inset:0;z-index:70;background:var(--bg);display:grid;place-items:center;padding:24px 16px;overflow-y:auto}
 .authcard{width:min(400px,100%);display:flex;flex-direction:column;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px}
 .authcard .brand{padding:0}
+.authok{margin:0;color:var(--ok);background:var(--ok-bg);padding:8px 12px;border-radius:8px;font-size:.88rem}
 .autherr{margin:0;color:var(--ko);background:var(--ko-bg);padding:8px 12px;border-radius:8px;font-size:.88rem}
 @media (max-width:820px){.who{margin:0;flex-direction:row;align-items:center;padding:0;border:0}.who span{display:none}}
 .srcchip{font:500 .7rem var(--f-mono);padding:1px 7px;border-radius:99px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
@@ -455,47 +456,112 @@ async function loadRemoteWeb(){
     normalize();lsSet(LS,S);setSync('cloud');if(changed&&route()!=='quiz')render();if(dirty.size)flush();
   }catch(e){setSync('err','Could not reach the server. Progress is kept in this browser.')}
 }
-const USER_RE=/^[a-z0-9._-]{3,24}$/;
-const uEmail=u=>u+'@users.cfa-qcm-lab.app';
-function showAuth(msg,mode){
-  mode=mode||'login';const a=$('#auth');a.hidden=false;
-  a.innerHTML=`<form class="authcard" id="authform" data-mode="${mode}"><div class="brand"><div class="brand-mark">L1</div><div><b>QCM Lab</b><span>CFA Level I · 2027</span></div></div>
-  <h1>${mode==='login'?'Log in':'Create an account'}</h1><p class="muted small" style="margin:0">${mode==='login'?'Your progress follows you on every device.':'Pick a username and a password. Your progress is private to your account.'}</p>
-  <div class="field"><label for="au">Username</label><input type="text" id="au" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. ugo" required></div>
-  <div class="field"><label for="ap">Password</label><input type="password" id="ap" autocomplete="${mode==='login'?'current-password':'new-password'}" minlength="6" required></div>
-  ${mode==='signup'?'<div class="field"><label for="ap2">Confirm password</label><input type="password" id="ap2" autocomplete="new-password" minlength="6" required></div>':''}
-  <p class="autherr" id="autherr" ${msg?'':'hidden'}>${esc(msg||'')}</p>
-  <button class="btn primary" type="submit" id="authgo" style="justify-content:center;padding:11px">${mode==='login'?'Log in':'Create my account'}</button>
-  <p class="small muted" style="margin:0;text-align:center">${mode==='login'?'No account yet? <a href="#" data-act="authSwitch" data-m="signup">Create one</a>':'Already have an account? <a href="#" data-act="authSwitch" data-m="login">Log in</a>'}</p></form>`;
-  $('#au').focus();
+const LEGACY_DOMAIN='@users.cfa-qcm-lab.app';
+const uEmail=u=>u+LEGACY_DOMAIN;
+const SITE_URL=()=>location.origin+location.pathname;
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+let ME=null; // current Supabase user
+const isLegacy=u=>!!(u&&u.email&&u.email.endsWith(LEGACY_DOMAIN));
+const displayName=u=>(u&&u.user_metadata&&u.user_metadata.username)||(u&&u.email?u.email.split('@')[0]:'me');
+function authCard(title,sub,body,foot){return`<form class="authcard" id="authform"><div class="brand"><div class="brand-mark">L1</div><div><b>QCM Lab</b><span>CFA Level I · 2027</span></div></div><h1>${title}</h1>${sub?`<p class="muted small" style="margin:0">${sub}</p>`:''}${body}${foot?`<p class="small muted" style="margin:0;text-align:center">${foot}</p>`:''}</form>`}
+const errBox=msg=>`<p class="autherr" id="autherr" ${msg?'':'hidden'}>${esc(msg||'')}</p>`;
+const okBox=msg=>msg?`<p class="authok">${esc(msg)}</p>`:'';
+function showAuth(msg,mode,ok){
+  mode=mode||'login';const a=$('#auth');a.hidden=false;a.dataset.mode=mode;let h='';
+  if(mode==='login')h=authCard('Log in','Your progress follows you on every device.',
+    `${okBox(ok)}<div class="field"><label for="ae">Email</label><input type="text" id="ae" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required></div>
+     <div class="field"><label for="ap">Password</label><input type="password" id="ap" autocomplete="current-password" required></div>
+     <a href="#" class="small" data-act="authSwitch" data-m="forgot" style="align-self:flex-end;margin-top:-8px">Forgot password?</a>
+     ${errBox(msg)}<button class="btn primary" type="submit" id="authgo">Log in</button>`,
+    'No account yet? <a href="#" data-act="authSwitch" data-m="signup">Create one</a>');
+  else if(mode==='signup')h=authCard('Create an account','Your email is only used to recover your account if you forget your password.',
+    `<div class="field"><label for="ae">Email</label><input type="email" id="ae" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" required></div>
+     <div class="field"><label for="an">Display name</label><input type="text" id="an" autocomplete="nickname" maxlength="24" placeholder="e.g. Ugo" required></div>
+     <div class="field"><label for="ap">Password</label><input type="password" id="ap" autocomplete="new-password" minlength="8" required><span class="small muted">At least 8 characters.</span></div>
+     <div class="field"><label for="ap2">Confirm password</label><input type="password" id="ap2" autocomplete="new-password" minlength="8" required></div>
+     ${errBox(msg)}<button class="btn primary" type="submit" id="authgo">Create my account</button>`,
+    'Already have an account? <a href="#" data-act="authSwitch" data-m="login">Log in</a>');
+  else if(mode==='forgot')h=authCard('Reset your password','Enter the email of your account. We will send you a link to choose a new password.',
+    `${okBox(ok)}<div class="field"><label for="ae">Email</label><input type="email" id="ae" autocomplete="email" autocapitalize="none" spellcheck="false" required></div>
+     ${errBox(msg)}<button class="btn primary" type="submit" id="authgo">Send the reset link</button>`,
+    '<a href="#" data-act="authSwitch" data-m="login">Back to log in</a>');
+  else if(mode==='reset')h=authCard('Choose a new password','You opened a password reset link. Pick your new password.',
+    `<div class="field"><label for="ap">New password</label><input type="password" id="ap" autocomplete="new-password" minlength="8" required></div>
+     <div class="field"><label for="ap2">Confirm new password</label><input type="password" id="ap2" autocomplete="new-password" minlength="8" required></div>
+     ${errBox(msg)}<button class="btn primary" type="submit" id="authgo">Save my new password</button>`,'');
+  else if(mode==='check')h=authCard('Check your inbox',esc(ok||''),'',
+    '<a href="#" data-act="authSwitch" data-m="login">Back to log in</a>');
+  a.innerHTML=h;const f=a.querySelector('input');if(f)f.focus();
 }
-async function submitAuth(form){
-  const mode=form.dataset.mode,u=$('#au').value.trim().toLowerCase(),p=$('#ap').value,err=$('#autherr'),btn=$('#authgo');
-  const fail=m=>{err.textContent=m;err.hidden=false;btn.disabled=false};
-  if(!USER_RE.test(u))return fail('Username: 3 to 24 characters, letters, digits, dot, dash or underscore.');
-  if(p.length<6)return fail('Password: at least 6 characters.');
-  if(mode==='signup'&&p!==$('#ap2').value)return fail('The two passwords differ.');
+function authMsg(e){const m=(e&&e.message)||'';
+  if(/invalid login/i.test(m))return'Wrong email or password.';
+  if(/not confirmed/i.test(m))return'Please confirm your email first: open the link we sent you (check spam too).';
+  if(/already registered|already exists/i.test(m))return'An account already exists with this email. Log in, or use “Forgot password?”.';
+  if(/rate limit|too many/i.test(m))return'Too many attempts. Wait a few minutes and try again.';
+  if(/weak|at least/i.test(m))return'Password too weak: use at least 8 characters.';
+  return m||'Something went wrong. Try again.'}
+async function submitAuth(){
+  const mode=$('#auth').dataset.mode,err=$('#autherr'),btn=$('#authgo');
+  const fail=m=>{if(err){err.textContent=m;err.hidden=false}btn.disabled=false};
+  const v=id=>($('#'+id)||{}).value||'';
   btn.disabled=true;
   try{
-    const r=mode==='login'?await SB.auth.signInWithPassword({email:uEmail(u),password:p}):await SB.auth.signUp({email:uEmail(u),password:p,options:{data:{username:u}}});
-    if(r.error){const m=r.error.message||'';return fail(/already registered|already exists/i.test(m)?'This username is taken.':/invalid login/i.test(m)?'Wrong username or password.':m)}
-    if(!r.data.session)return fail('Account created but not active: email confirmation must be turned off in Supabase (Authentication → Sign In / Providers → Email).');
-    $('#auth').hidden=true;enterAs(r.data.session.user);
+    if(mode==='login'){
+      let id=v('ae').trim().toLowerCase();const p=v('ap');
+      if(!id||!p)return fail('Enter your email and password.');
+      if(!id.includes('@'))id=uEmail(id); // accounts created before emails were required
+      const r=await SB.auth.signInWithPassword({email:id,password:p});if(r.error)return fail(authMsg(r.error));
+      $('#auth').hidden=true;enterAs(r.data.session.user);
+    }else if(mode==='signup'){
+      const e=v('ae').trim().toLowerCase(),n=v('an').trim(),p=v('ap');
+      if(!EMAIL_RE.test(e))return fail('Enter a valid email address.');
+      if(!n)return fail('Enter a display name.');
+      if(p.length<8)return fail('Password: at least 8 characters.');
+      if(p!==v('ap2'))return fail('The two passwords differ.');
+      const r=await SB.auth.signUp({email:e,password:p,options:{data:{username:n},emailRedirectTo:SITE_URL()}});
+      if(r.error)return fail(authMsg(r.error));
+      if(r.data.user&&Array.isArray(r.data.user.identities)&&!r.data.user.identities.length)return fail('An account already exists with this email. Log in, or use “Forgot password?”.');
+      if(r.data.session){$('#auth').hidden=true;enterAs(r.data.session.user)}
+      else showAuth('','check',`We sent a confirmation link to ${e}. Open it to activate your account (check your spam folder).`);
+    }else if(mode==='forgot'){
+      const e=v('ae').trim().toLowerCase();if(!EMAIL_RE.test(e))return fail('Enter a valid email address.');
+      const r=await SB.auth.resetPasswordForEmail(e,{redirectTo:SITE_URL()});if(r.error)return fail(authMsg(r.error));
+      showAuth('','check',`If an account exists for ${e}, a reset link is on its way. Open it on this device (check your spam folder).`);
+    }else if(mode==='reset'){
+      const p=v('ap');if(p.length<8)return fail('Password: at least 8 characters.');if(p!==v('ap2'))return fail('The two passwords differ.');
+      const r=await SB.auth.updateUser({password:p});if(r.error)return fail(authMsg(r.error));
+      $('#auth').hidden=true;toast('New password saved');enterAs(r.data.user);
+    }
   }catch(e){fail('Could not reach the server. Check your connection and try again.')}
 }
 async function enterAs(user){
-  UID=user.id;LS='cfaqcm.v1.'+UID;LS_ACTIVE='cfaqcm.active.'+UID;
+  ME=user;UID=user.id;LS='cfaqcm.v1.'+UID;LS_ACTIVE='cfaqcm.active.'+UID;
   S=lsGet(LS)||blank();normalize();Q=lsGet(LS_ACTIVE);
-  const who=$('#who');who.hidden=false;$('#whoname').textContent=(user.user_metadata&&user.user_metadata.username)||'me';
+  $('#who').hidden=false;$('#whoname').textContent=displayName(user);
   await loadPerso();render();loadRemoteWeb();
 }
+function hashParams(){const h=location.hash.slice(1);return h.includes('=')?Object.fromEntries(new URLSearchParams(h)):{}}
 async function startWeb(){
   document.body.classList.add('no-tutor');
   if(!window.supabase||SUPA.url.startsWith('__')){$('#main').innerHTML='<div class="empty">The account server is not configured yet.</div>';return}
-  SB=supabase.createClient(SUPA.url,SUPA.key);
+  const hp=hashParams();let recovering=hp.type==='recovery';
+  SB=supabase.createClient(SUPA.url,SUPA.key,{auth:{flowType:'implicit',detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}});
+  SB.auth.onAuthStateChange(ev=>{if(ev==='PASSWORD_RECOVERY'){recovering=true;showAuth('','reset')}});
   const{data}=await SB.auth.getSession();
+  if(Object.keys(hp).length)history.replaceState(null,'',location.pathname+'#dashboard');
+  if(hp.error_code||hp.error)return showAuth(/expired/i.test(hp.error_code||hp.error_description||'')?'This link has expired. Ask for a new one below.':(hp.error_description||'This link is not valid any more.').replace(/\+/g,' '),hp.type==='recovery'||/recovery|otp/i.test(hp.error_code||'')?'forgot':'login');
+  if(recovering&&data&&data.session)return showAuth('','reset');
   if(data&&data.session)enterAs(data.session.user);else showAuth();
 }
+function accountPanel(){
+  if(MODE!=='web'||!ME)return'';
+  const legacy=isLegacy(ME);
+  return`<section class="panel stack" style="gap:12px"><h2>My account</h2>
+   ${legacy?`<p class="autherr" style="margin:0">Your account has no email yet, so a forgotten password could not be recovered. Add your email below.</p>`:`<p class="small" style="margin:0">Signed in as <b>${esc(ME.email)}</b> · display name <b>${esc(displayName(ME))}</b></p>`}
+   <div class="field"><label for="acEmail">${legacy?'Add my email':'Change my email'}</label><div class="row" style="flex-wrap:nowrap"><input type="email" id="acEmail" autocomplete="email" placeholder="you@example.com"><button class="btn" data-act="acEmail">${legacy?'Add':'Change'}</button></div><span class="small muted">We send a confirmation link to this address.</span></div>
+   <div class="field"><label for="acPass">New password</label><div class="row" style="flex-wrap:nowrap"><input type="password" id="acPass" autocomplete="new-password" minlength="8" placeholder="8+ characters"><button class="btn" data-act="acPass">Change</button></div></div></section>`;
+}
+const legacyBanner=()=>MODE==='web'&&isLegacy(ME)?`<div class="banner"><p><b>Secure your account.</b> Add your email so you can reset your password if you ever forget it.</p><a class="btn primary" href="#settings">Add my email</a></div>`:'';
 async function initCloud(){
   if(!window.claude||!window.claude.use)return;
   try{
@@ -638,7 +704,7 @@ function vDash(){
   const g=gStats(),st=streak(),set=S.meta.settings;
   const dP=daysTo(set.partielDate),dE=daysTo(set.examDate),todayN=S.meta.daily[today()]||0;
   const readN=Object.keys(S.meta.read).length;
-  let h=`<header class="page-head"><div><p class="eyebrow">CFA Level I · 2027 curriculum</p><h1>Dashboard</h1></div><div class="row"><a class="btn" href="#review">Review (${g.wrong+g.flag})</a><a class="btn primary" href="#builder">Build a quiz</a></div></header><div class="stack">${importBanner()}`;
+  let h=`<header class="page-head"><div><p class="eyebrow">CFA Level I · 2027 curriculum</p><h1>Dashboard</h1></div><div class="row"><a class="btn" href="#review">Review (${g.wrong+g.flag})</a><a class="btn primary" href="#builder">Build a quiz</a></div></header><div class="stack">${legacyBanner()}${importBanner()}`;
   if(dP!=null||dE!=null)h+=`<div class="countdown">${dP!=null?`<span>${esc(set.partielName||'Mock exam')}: <b>${dP>=0?dP+' days':'past'}</b></span>`:''}${dE!=null?`<span>CFA exam: <b>${dE>=0?dE+' days':'past'}</b></span>`:''}<span>Today: <b>${plural(todayN,'question')}</b></span><a class="btn ghost sm" href="#settings">Edit dates</a></div>`;
   h+=`<div class="kpis">
    <div class="kpi hero"><p class="eyebrow">Overall score</p><div class="v">${pct(g.acc)}</div><div class="l">${g.acc==null?'Weighted by each topic’s exam weight':'Exam-weighted · indicative pass mark '+pct(MPS)}</div></div>
@@ -812,7 +878,7 @@ function vHistory(){
 
 function vSettings(){
   const s=S.meta.settings;const apN=PERSO?Object.values(PERSO.ap||{}).reduce((a,l)=>a+l.length,0):0;
-  return`<header class="page-head"><div><p class="eyebrow">Data, dates, timing, backup</p><h1>Settings</h1></div></header><div class="grid2">
+  return`<header class="page-head"><div><p class="eyebrow">Account, data, dates, timing, backup</p><h1>Settings</h1></div></header><div class="grid2">${accountPanel()}
   <section class="panel stack" style="gap:12px"><h2>My AnalystPrep data</h2>
    ${PERSO?`<p class="small" style="margin:0">Imported ${fmtD(PERSO.importedAt||Date.now())}: <b>${apN}</b> questions, <b>${(PERSO.fiches||[]).reduce((a,f)=>a+f.notes.length,0)}</b> study sheets, <b>${Object.values(PERSO.raw||{}).reduce((a,m)=>a+m.length,0)}</b> full-text modules. Stored only in this browser.</p>`:'<p class="small muted" style="margin:0">Pick the file <span class="mono">cfa-my-data.json</span> (in your cfa-qcm\\private folder). It stays in this browser and is never uploaded; only your progress is synced.</p>'}
    <input type="file" id="persoFile" accept=".json,application/json">
@@ -897,6 +963,11 @@ const ACT={
   abandon:()=>{Q=null;lsSet(LS_ACTIVE,null);render()},
   sim:el=>startSim(+el.dataset.n),
   authSwitch:el=>showAuth('',el.dataset.m),
+  acEmail:async el=>{const e=($('#acEmail').value||'').trim().toLowerCase();if(!EMAIL_RE.test(e))return toast('Enter a valid email address.');el.disabled=true;
+    const r=await SB.auth.updateUser({email:e},{emailRedirectTo:SITE_URL()});el.disabled=false;
+    if(r.error)return toast(authMsg(r.error));toast('Confirmation link sent to '+e+'. Open it to finish (check spam).')},
+  acPass:async el=>{const p=$('#acPass').value||'';if(p.length<8)return toast('Password: at least 8 characters.');el.disabled=true;
+    const r=await SB.auth.updateUser({password:p});el.disabled=false;if(r.error)return toast(authMsg(r.error));$('#acPass').value='';toast('Password changed')},
   logout:async()=>{try{await flushWeb()}catch(e){}try{await SB.auth.signOut()}catch(e){}location.hash='';location.reload()},
   askOpen:()=>openAsk(),
   askClose:()=>{$('#drawer').hidden=true},
@@ -966,7 +1037,7 @@ document.addEventListener('mousemove',e=>{if(tip.hidden)return;const w=tip.offse
 document.addEventListener('focusin',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el){const r=el.getBoundingClientRect();tip.textContent=el.dataset.tip;tip.hidden=false;tip.style.left=Math.max(8,Math.min(r.left,innerWidth-tip.offsetWidth-8))+'px';tip.style.top=(r.bottom+6)+'px'}});
 document.addEventListener('focusout',()=>{tip.hidden=true});
 window.addEventListener('hashchange',()=>{if(Q&&route()!=='quiz')try{stamp()}catch(e){}render()});
-document.addEventListener('submit',e=>{if(e.target.id==='authform'){e.preventDefault();submitAuth(e.target)}});
+document.addEventListener('submit',e=>{if(e.target.id==='authform'){e.preventDefault();submitAuth()}});
 if(MODE==='web')startWeb();else loadPerso().finally(()=>{render();initCloud()});
 </script>
 
