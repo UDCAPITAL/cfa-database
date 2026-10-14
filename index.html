@@ -907,8 +907,7 @@ function webSample(){
       throw{code:r.status===401?'session_expired':j.error==='daily_limit'?'daily_limit':j.error==='no_credits'?'no_credits':j.error==='not_configured'?'not_configured':'upstream_error',limit:j.limit}}
     const rd=r.body.getReader(),dec=new TextDecoder();let buf='',text='',truncated=false;
     try{for(;;){const{done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
-      let i;while((i=buf.indexOf('
-'))>=0){const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+      let i;while((i=buf.indexOf('\n'))>=0){const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
         if(!line.startsWith('data:'))continue;const d=line.slice(5).trim();if(d==='[DONE]')continue;
         try{const j=JSON.parse(d);const c=j.choices&&j.choices[0];const piece=c&&c.delta&&c.delta.content||'';if(c&&c.finish_reason==='length')truncated=true;if(piece){text+=piece;opt.onText&&opt.onText({text,delta:piece})}}catch(e){}}}}
     catch(e){throw{code:e&&e.name==='AbortError'?'cancelled':'upstream_error',text}}
