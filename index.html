@@ -461,8 +461,8 @@ main.wide{max-width:none}
 :root{--paper:#fffdf7;--dot:rgba(15,31,61,.07);--margin-line:rgba(201,162,74,.45);--ex-bg:#fbf6e8;--ex-line:#eadcb4}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#0f1d37;--dot:rgba(232,201,119,.06);--margin-line:rgba(201,162,74,.35);--ex-bg:#14254a;--ex-line:#2a4372}}
 :root[data-theme="dark"]{--paper:#0f1d37;--dot:rgba(232,201,119,.06);--margin-line:rgba(201,162,74,.35);--ex-bg:#14254a;--ex-line:#2a4372}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nbdoc figure{background:#fff;filter:invert(.88) hue-rotate(180deg);box-shadow:none}}
-:root[data-theme="dark"] .nbdoc figure{background:#fff;filter:invert(.88) hue-rotate(180deg);box-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nbdoc figure:not(.eq){background:#fff;filter:invert(.88) hue-rotate(180deg);box-shadow:none}}
+:root[data-theme="dark"] .nbdoc figure:not(.eq){background:#fff;filter:invert(.88) hue-rotate(180deg);box-shadow:none}
 :root[data-theme="dark"] .nbdoc figure.eq canvas{filter:invert(1)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nbdoc figure.eq canvas{filter:invert(1)}}
 @media (max-width:600px){.nbook{padding:20px 14px 20px 30px}.nbdoc{font-size:calc(16px * var(--nz,1))}}
@@ -476,6 +476,7 @@ main.wide{max-width:none}
 .loslinks b{font:500 .78rem var(--f-mono);color:var(--accent)}
 .pdftbl td,.pdftbl th{font-size:.85rem}
 #pdfstat:empty{display:none}
+body.dropping::after{content:"Drop your AnalystPrep PDFs here";position:fixed;inset:12px;z-index:90;display:grid;place-items:center;border:3px dashed var(--gold);border-radius:18px;background:color-mix(in srgb,var(--navy) 80%,transparent);color:var(--gold-2);font:700 1.4rem var(--f-display);pointer-events:none}
 @media (min-width:1100px){.note-layout:has(.pdfnote) .note-side{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto}}
 </style>
 <div class="app">
@@ -560,6 +561,8 @@ function pdfjs(){
     s.onerror=()=>{PDFLIB=null;rej(new Error('pdfjs'))};document.head.appendChild(s)}));
 }
 const nrm=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
+const FILE_SUBJ=[['quant',1],['econom',2],['corporate',3],['issuer',3],['financial statement',4],['fsa',4],['equit',5],['fixed income',6],['derivativ',7],['alternative',8],['portfolio',9],['ethic',10],['professional standard',10]];
+function fileSubj(name){const n=String(name||'').toLowerCase().replace(/[_\-]+/g,' ');const m=FILE_SUBJ.find(([k])=>n.includes(k));return m?m[1]:0}
 function titleSubj(n,title){const t=nrm(title).slice(0,12);if(t.length<8)return 0;const c=CURR.find(c=>c.r[n-1]&&nrm(c.r[n-1]).slice(0,12)===t);return c?c.id:0}
 /* text lines of a page, top-down coordinates in points */
 async function pageLines(page,p){
@@ -577,7 +580,7 @@ async function scanPdf(file,onP){
   const L=[];let W=612,H=792;
   for(let p=1;p<=doc.numPages;p++){const pg=await doc.getPage(p);if(p===1){W=pg.view[2]-pg.view[0];H=pg.view[3]-pg.view[1]}
     L.push(...await pageLines(pg,p));pg.cleanup();if(p%8===0)onP(p/doc.numPages)}
-  const meta={name:file.name,np:doc.numPages,w:W,h:H,size:file.size,ts:Date.now()};doc.destroy();
+  const meta={name:file.name,np:doc.numPages,w:W,h:H,size:file.size,ts:Date.now(),hint:fileSubj(file.name)};doc.destroy();
   const qi=[];L.forEach((l,i)=>{if(/^Q\.\d+\b/.test(l.t)&&l.x<75)qi.push(i)});
   if(qi.length<=10)return parseNotes(L,meta);
   meta.ext={};L.forEach(l=>{const e=meta.ext[l.p]||(meta.ext[l.p]=[l.top,l.bot]);e[0]=Math.min(e[0],l.top);e[1]=Math.max(e[1],l.bot)}); // Q&A pages hold text only: trim page breaks to the text
@@ -587,7 +590,7 @@ async function scanPdf(file,onP){
 function parseQA(L,qi,meta){
   const votes={},lmAt=[];let lm=0;
   L.forEach((l,i)=>{const m=/Learning Module (\d+)\s*:\s*(.*)/.exec(l.t);if(m){lm=+m[1];const s=titleSubj(lm,m[2]);if(s)votes[s]=(votes[s]||0)+1}lmAt[i]=lm});
-  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||0);
+  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||meta.hint||0);
   const tx=a=>a.map(l=>l.t).join(' ');const qs=[];
   qi.forEach((i,k)=>{
     const seg=L.slice(i,k+1<qi.length?qi[k+1]:L.length);
@@ -613,7 +616,7 @@ function parseQA(L,qi,meta){
 function parseNotes(L,meta){
   const st=[];L.forEach((l,i)=>{const m=/^Learning Module (\d+)\s*:\s*(.*)/.exec(l.t);if(m&&+m[1]===st.length+1)st.push({r:+m[1],title:m[2],i})});
   const votes={};st.forEach(m=>{const s=titleSubj(m.r,m.title);if(s)votes[s]=(votes[s]||0)+1});
-  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||0);const mods={};
+  const s=+(Object.keys(votes).sort((a,b)=>votes[b]-votes[a])[0]||meta.hint||0);const mods={};
   st.forEach((m,k)=>{
     const a=L[m.i],nx=st[k+1]?L[st[k+1].i]:null;let p1=nx?nx.p:meta.np,y1=nx?nx.top-8:meta.h-64;
     if(y1<36+24){p1--;y1=meta.h-64}
@@ -1336,7 +1339,7 @@ function vSettings(){
   const s=S.meta.settings;const apN=PERSO?Object.values(PERSO.ap||{}).reduce((a,l)=>a+l.length,0):0;
   return`<header class="page-head"><div><p class="eyebrow">Account, data, dates, timing, backup</p><h1>Settings</h1></div></header><div class="grid2">${accountPanel()}
   <section class="panel stack" style="gap:12px"><h2>My AnalystPrep PDFs</h2>
-   <p class="small muted" style="margin:0">Select your AnalystPrep PDFs, all at once if you like: for each topic, the study notes file and the Q&amp;A file. Topics are recognised automatically. The PDFs are read and stored only in this browser (repeat on each device); only your progress is synced.</p>
+   <p class="small muted" style="margin:0">Select your AnalystPrep PDFs (or drag them onto the page), all at once if you like: for each topic, the study notes file and the Q&amp;A file. Topics are recognised automatically. The PDFs are read and stored only in this browser (repeat on each device); only your progress is synced.</p>
    <input type="file" id="pdfFiles" accept=".pdf,application/pdf" multiple>
    <p class="small" id="pdfstat" style="margin:0"></p>
    ${hasPdx()?`<div class="tbl-wrap"><table class="pdftbl"><thead><tr><th>Topic</th><th>Notes</th><th>Questions</th><th></th></tr></thead><tbody>${CURR.filter(c=>PDX.subj[c.id]).map(c=>{const v=PDX.subj[c.id],fn=v.notes&&PDX.files[v.notes],fq=v.qa&&PDX.files[v.qa];return`<tr><td>${c.code}</td><td>${fn?fn.n+'/'+c.r.length+' readings':'<span class="muted">—</span>'}</td><td>${fq?fq.n:'<span class="muted">—</span>'}</td><td style="text-align:right"><button class="btn sm ghost" data-act="pdfDrop" data-s="${c.id}">Remove</button></td></tr>`}).join('')}</tbody></table></div>
@@ -1530,6 +1533,9 @@ document.addEventListener('keydown',e=>{
   else if(exam&&k==='arrowright')ACT.next();else if(exam&&k==='arrowleft')ACT.prev();
 });
 window.addEventListener('scroll',()=>{const b=$('#rprog'),d=$('#pdfdoc');if(!b||!d)return;const r=d.getBoundingClientRect();b.style.width=Math.min(100,Math.max(0,(innerHeight*.6-r.top)/r.height*100))+'%'},{passive:true});
+document.addEventListener('dragover',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){e.preventDefault();document.body.classList.add('dropping')}});
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('dropping')});
+document.addEventListener('drop',e=>{document.body.classList.remove('dropping');const fs=e.dataTransfer&&[...e.dataTransfer.files].filter(f=>/\.pdf$/i.test(f.name));if(!fs||!fs.length)return;e.preventDefault();if(route()!=='settings')go('settings');setTimeout(()=>importPdfs(fs),50)});
 const tip=$('#tip');
 document.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el){tip.hidden=true;return}tip.textContent=el.dataset.tip;tip.hidden=false});
 document.addEventListener('mousemove',e=>{if(tip.hidden)return;const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-10;if(y+h>innerHeight-8)y=e.clientY-h-10;tip.style.left=x+'px';tip.style.top=y+'px'});
